@@ -1,0 +1,24 @@
+{
+  "name": "erp_backend",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mongoose": "^8.15.0",
+    "msnodesqlv8": "^4.5.0",
+    "mssql": "^11.0.1",
+    "multer": "^2.0.0",
+    "node-adodb": "^5.0.3",
+    "nodemon": "^3.1.10"
+  }
+}
