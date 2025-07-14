@@ -1,6 +1,8 @@
 require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
+// const path = require("path");
+const fs = require("fs");
 // const sql = require("mssql/msnodesqlv8");
 const sql = require('mssql');
 const cors = require("cors");
@@ -43,6 +45,35 @@ sql
 const upload = multer({ dest: "uploads/" });
 
 // Example of connecting to the database
+
+async function importBatch(pool, tableName, batch) {
+  const columns = Object.keys(batch[0]);
+  const insertQuery = `INSERT INTO ${tableName} (${columns.join(
+    ", "
+  )}) VALUES `;
+
+  const values = batch
+    .map(
+      (record) =>
+        `(${columns
+          .map((col) => {
+            const value =
+              record[col] === null
+                ? "NULL"
+                : `'${String(record[col]).replace(/'/g, "''")}'`;
+            return value;
+          })
+          .join(", ")})`
+    )
+    .join(", ");
+
+  await pool.request().query(insertQuery + values);
+}
+
+
+
+
+
 
 
 
@@ -88,7 +119,7 @@ app.post('/api/v1/students', async (req, res) => {
       .input('SectionName', sql.NVarChar(20), SectionName || null)
       .input('FatherAddress', sql.NVarChar(200), FatherAddress || null)
       .query(`
-        INSERT INTO StudentMaster (
+        INSERT INTO Student_Master (
           SchoolID, Scholarno, StudentName, Sex, FatherName,
           MotherName, DOB, FatherPhone, AppliedClass, SectionName, FatherAddress
         ) VALUES (
@@ -172,7 +203,7 @@ app.put('/api/v1/students/:Scholarno', async (req, res) => {
             .input('SectionName', sql.NVarChar(20), SectionName)
             .input('FatherAddress', sql.NVarChar(200), FatherAddress || null)
             .query(`
-                UPDATE StudentMaster SET
+                UPDATE Student_Master SET
                     StudentName = @StudentName,
                     Sex = @Sex,
                     FatherName = @FatherName,
