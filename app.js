@@ -1,11 +1,11 @@
 require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
-const path = require("path");
+// const path = require("path");
 const fs = require("fs");
 const ADODB = require("node-adodb");
-const sql = require("mssql/msnodesqlv8");
-// const sql = require('mssql');
+// const sql = require("mssql/msnodesqlv8");
+const sql = require('mssql');
 const cors = require("cors");
 
 const app = express();
@@ -47,29 +47,29 @@ const upload = multer({ dest: "uploads/" });
 
 // Example of connecting to the database
 
-async function importBatch(pool, tableName, batch) {
-  const columns = Object.keys(batch[0]);
-  const insertQuery = `INSERT INTO ${tableName} (${columns.join(
-    ", "
-  )}) VALUES `;
+// async function importBatch(pool, tableName, batch) {
+//   const columns = Object.keys(batch[0]);
+//   const insertQuery = `INSERT INTO ${tableName} (${columns.join(
+//     ", "
+//   )}) VALUES `;
 
-  const values = batch
-    .map(
-      (record) =>
-        `(${columns
-          .map((col) => {
-            const value =
-              record[col] === null
-                ? "NULL"
-                : `'${String(record[col]).replace(/'/g, "''")}'`;
-            return value;
-          })
-          .join(", ")})`
-    )
-    .join(", ");
+//   const values = batch
+//     .map(
+//       (record) =>
+//         `(${columns
+//           .map((col) => {
+//             const value =
+//               record[col] === null
+//                 ? "NULL"
+//                 : `'${String(record[col]).replace(/'/g, "''")}'`;
+//             return value;
+//           })
+//           .join(", ")})`
+//     )
+//     .join(", ");
 
-  await pool.request().query(insertQuery + values);
-}
+//   await pool.request().query(insertQuery + values);
+// }
 
 
 
