@@ -155,9 +155,9 @@ app.post('/api/v1/students', async (req, res) => {
 });
 
 // PUT endpoint to update student data
-app.put('/api/v1/students/:Scholarno', async (req, res) => {
-    const Scholarno = parseInt(req.params.Scholarno);
+app.put('/api/v1/updatestu', async (req, res) => {
     const {
+        Scholarno,
         school_Id,
         StudentName,
         Sex,
@@ -170,7 +170,7 @@ app.put('/api/v1/students/:Scholarno', async (req, res) => {
         FatherAddress
     } = req.body;
 
-    console.log(req.body, req.params)
+    console.log(req.body)
     // Validate required fields
     if (!school_Id || !StudentName || !Sex || !AppliedClass || !SectionName) {
         return res.status(400).json({ 
