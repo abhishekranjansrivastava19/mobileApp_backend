@@ -170,6 +170,7 @@ app.put('/api/v1/students/:Scholarno', async (req, res) => {
         FatherAddress
     } = req.body;
 
+    console.log(req.body)
     // Validate required fields
     if (!school_Id || !StudentName || !Sex || !AppliedClass || !SectionName) {
         return res.status(400).json({ 
