@@ -193,7 +193,7 @@ app.put('/api/v1/students/:Scholarno', async (req, res) => {
         pool = await sql.connect(sqlConfig);
 
         const result = await pool.request()
-            .input('school_Id', sql.Int, SchoolID)
+            .input('school_Id', sql.Int, school_Id)
             .input('Scholarno', sql.NVarChar(50), Scholarno)
             .input('StudentName', sql.NVarChar(100), StudentName)
             .input('Sex', sql.NVarChar(10), Sex)
