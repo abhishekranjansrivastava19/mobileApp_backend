@@ -94,7 +94,7 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
     const sheet = workbook.SheetNames[0];
     const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheet]);
 
-    const poolPromise = new sql.ConnectionPool(config)
+    const poolPromise = new sql.ConnectionPool(sqlConfig)
       .connect()
       .then((pool) => {
         console.log("✅ Connected to MSSQL (Windows Auth)");
