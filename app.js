@@ -80,7 +80,8 @@ async function importBatch(pool, tableName, batch) {
 
 app.post('/api/v1/students', async (req, res) => {
   const {
-    SchoolID,
+    school_Id,
+    school_code,
     Scholarno,
     StudentName,
     Sex,
@@ -107,7 +108,8 @@ app.post('/api/v1/students', async (req, res) => {
 
     // Insert student record
     const result = await pool.request()
-      .input('SchoolID', sql.Int, SchoolID)
+      .input('school_Id', sql.Int, school_Id)
+      .input('school_code', sql.Int, school_code)
       .input('Scholarno', sql.NVarChar(50), Scholarno)
       .input('StudentName', sql.NVarChar(100), StudentName)
       .input('Sex', sql.NVarChar(10), Sex)
