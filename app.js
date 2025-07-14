@@ -43,36 +43,37 @@ sql
     console.error("Database connection failed:", err);
   });
 
-
-
-  const storage = multer.diskStorage({
+const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '..', 'uploads');
-    
+    const uploadDir = path.join(__dirname, "..", "uploads");
+
     // Ensure upload directory exists
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
-    
+
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
+  },
 });
 
-const upload = multer({ 
+const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    if (file.mimetype !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-      return cb(new Error('Only Excel files are allowed!'), false);
+    if (
+      file.mimetype !==
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ) {
+      return cb(new Error("Only Excel files are allowed!"), false);
     }
     cb(null, true);
   },
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
 });
 
 // const upload = multer({ dest: "uploads/" });
@@ -92,6 +93,18 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
     const workbook = XLSX.readFile(filePath);
     const sheet = workbook.SheetNames[0];
     const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheet]);
+
+    const poolPromise = new sql.ConnectionPool(config)
+      .connect()
+      .then((pool) => {
+        console.log("✅ Connected to MSSQL (Windows Auth)");
+        return pool;
+      })
+
+      .catch((err) => {
+        console.error("❌ Database Connection Failed - ", err);
+        throw err;
+      });
 
     const pool = await poolPromise;
     let inserted = 0;
