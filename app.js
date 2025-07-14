@@ -158,7 +158,7 @@ app.post('/api/v1/students', async (req, res) => {
 app.put('/api/v1/students/:Scholarno', async (req, res) => {
     const Scholarno = parseInt(req.params.Scholarno);
     const {
-        SchoolID,
+        school_Id,
         StudentName,
         Sex,
         FatherName,
@@ -171,9 +171,9 @@ app.put('/api/v1/students/:Scholarno', async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!SchoolID || !StudentName || !Sex || !AppliedClass || !SectionName) {
+    if (!school_Id || !StudentName || !Sex || !AppliedClass || !SectionName) {
         return res.status(400).json({ 
-            error: 'SchoolID, StudentName, Sex, AppliedClass, and SectionName are required fields' 
+            error: 'school_Id, StudentName, Sex, AppliedClass, and SectionName are required fields' 
         });
     }
 
@@ -193,7 +193,7 @@ app.put('/api/v1/students/:Scholarno', async (req, res) => {
         pool = await sql.connect(sqlConfig);
 
         const result = await pool.request()
-            .input('SchoolID', sql.Int, SchoolID)
+            .input('school_Id', sql.Int, SchoolID)
             .input('Scholarno', sql.NVarChar(50), Scholarno)
             .input('StudentName', sql.NVarChar(100), StudentName)
             .input('Sex', sql.NVarChar(10), Sex)
@@ -215,7 +215,7 @@ app.put('/api/v1/students/:Scholarno', async (req, res) => {
                     AppliedClass = @AppliedClass,
                     SectionName = @SectionName,
                     FatherAddress = @FatherAddress
-                WHERE Scholarno = @Scholarno AND SchoolID = @SchoolID
+                WHERE Scholarno = @Scholarno AND school_Id = @school_Id
             `);
 
         if (result.rowsAffected[0] === 0) {
