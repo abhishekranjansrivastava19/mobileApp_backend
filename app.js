@@ -45,17 +45,17 @@ sql
 
 
 
-//   const storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, "uploads/"); // Folder must exist
-//   },
-//   filename: function (req, file, cb) {
-//     cb(null, Date.now() + path.extname(file.originalname));
-//   },
-// });
+  const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/"); // Folder must exist
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
 
-// const upload = multer({ storage });
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ storage });
+// const upload = multer({ dest: "uploads/" });
 
 // Example of connecting to the database
 
