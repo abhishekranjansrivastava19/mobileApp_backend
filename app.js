@@ -25,7 +25,7 @@ const sqlConfig = {
   user: "dpsuser",
   password: "dps@123",
   server: "150.242.203.229", // SQL Server address
-  database: "Enlighten_DB",
+  database: "Enlighten_App",
   options: {
     encrypt: false, // Set to true if using Azure
     enableArithAbort: true,
@@ -185,13 +185,24 @@ app.post("/api/v1/students", async (req, res) => {
     school_code,
     Scholarno,
     StudentName,
+    StudentSurName,
     Sex,
+    PhoneNo,
     FatherName,
     MotherName,
+    DOA,
     DOB,
     FatherPhone,
     AppliedClass,
     SectionName,
+    AppliedStream,
+    AppliedMedium,
+    Area,
+    Mode,
+    Board,
+    CasteName,
+    City,
+    Email,
     FatherAddress,
   } = req.body;
 
@@ -214,20 +225,31 @@ app.post("/api/v1/students", async (req, res) => {
       .input("school_code", sql.NVarChar(50), school_code)
       .input("Scholarno", sql.NVarChar(50), Scholarno)
       .input("StudentName", sql.NVarChar(100), StudentName)
+      .input("StudentSurName", sql.NVarChar(100), StudentSurName)
       .input("Sex", sql.NVarChar(10), Sex)
+      .input("PhoneNo", sql.NVarChar(15), PhoneNo || null)
       .input("FatherName", sql.NVarChar(100), FatherName || null)
       .input("MotherName", sql.NVarChar(100), MotherName || null)
+      .input("DOA", sql.Date, DOA ? new Date(DOA) : null)
       .input("DOB", sql.Date, DOB ? new Date(DOB) : null)
       .input("FatherPhone", sql.NVarChar(15), FatherPhone || null)
       .input("AppliedClass", sql.NVarChar(20), AppliedClass)
       .input("SectionName", sql.NVarChar(20), SectionName || null)
+      .input("AppliedStream", sql.NVarChar(20), AppliedStream)
+      .input("AppliedMedium", sql.NVarChar(20), AppliedMedium)
+      .input("Area", sql.NVarChar(50), Area)
+      .input("Mode", sql.NVarChar(50), Mode)
+      .input("Board", sql.NVarChar(50), Board)
+      .input("CasteName", sql.NVarChar(50), CasteName)
+      .input("City", sql.NVarChar(50), City)
+      .input("Email", sql.NVarChar(50), Email)
       .input("FatherAddress", sql.NVarChar(200), FatherAddress || null).query(`
         INSERT INTO Student_Master (
-          school_Id, school_code, Scholarno, StudentName, Sex, FatherName,
-          MotherName, DOB, FatherPhone, AppliedClass, SectionName, FatherAddress
+          school_Id, school_code, Scholarno, StudentName, StudentSurName, Sex, PhoneNo, FatherName,
+          MotherName, DOA, DOB, FatherPhone, AppliedClass, SectionName, AppliedStream, AppliedMedium, Area, Mode, Board, CastName, City, Email, FatherAddress
         ) VALUES (
-          @school_Id, @school_code, @Scholarno, @StudentName, @Sex, @FatherName,
-          @MotherName, @DOB, @FatherPhone, @AppliedClass, @SectionName, @FatherAddress
+          @school_Id, @school_code, @Scholarno, @StudentName, @StudentSurName, @Sex, @PhoneNo, @FatherName,
+          @MotherName, @DOA, @DOB, @FatherPhone, @AppliedClass, @SectionName, @AppliedStream, @AppliedMedium, @Area, @Mode, @Board, @CasteName, @City, @Email, @FatherAddress
         )
       `);
 
@@ -261,13 +283,24 @@ app.put("/api/v1/updatestu", async (req, res) => {
     Scholarno,
     school_Id,
     StudentName,
+    StudentSurName,
     Sex,
+    PhoneNo,
     FatherName,
     MotherName,
+    DOA,
     DOB,
     FatherPhone,
     AppliedClass,
     SectionName,
+    AppliedStream,
+    AppliedMedium,
+    Area,
+    Mode,
+    Board,
+    CasteName,
+    City,
+    Email,
     FatherAddress,
   } = req.body;
 
@@ -300,23 +333,45 @@ app.put("/api/v1/updatestu", async (req, res) => {
       .input("school_Id", sql.NVarChar(50), school_Id)
       .input("Scholarno", sql.NVarChar(50), Scholarno)
       .input("StudentName", sql.NVarChar(100), StudentName)
+      .input("StudentSurName", sql.NVarChar(100), StudentSurName)
       .input("Sex", sql.NVarChar(10), Sex)
+      .input("PhoneNo", sql.NVarChar(15), PhoneNo || null)
       .input("FatherName", sql.NVarChar(100), FatherName || null)
       .input("MotherName", sql.NVarChar(100), MotherName || null)
-      .input("DOB", sql.Date, dobDate)
+      .input("DOA", sql.Date, DOA ? new Date(DOA) : null)
+      .input("DOB", sql.Date, DOB ? new Date(DOB) : null)
       .input("FatherPhone", sql.NVarChar(15), FatherPhone || null)
       .input("AppliedClass", sql.NVarChar(20), AppliedClass)
-      .input("SectionName", sql.NVarChar(20), SectionName)
+      .input("SectionName", sql.NVarChar(20), SectionName || null)
+      .input("AppliedStream", sql.NVarChar(20), AppliedStream)
+      .input("AppliedMedium", sql.NVarChar(20), AppliedMedium)
+      .input("Area", sql.NVarChar(50), Area)
+      .input("Mode", sql.NVarChar(50), Mode)
+      .input("Board", sql.NVarChar(50), Board)
+      .input("CasteName", sql.NVarChar(50), CasteName)
+      .input("City", sql.NVarChar(50), City)
+      .input("Email", sql.NVarChar(50), Email)
       .input("FatherAddress", sql.NVarChar(200), FatherAddress || null).query(`
                 UPDATE Student_Master SET
                     StudentName = @StudentName,
+                    StudentSurName = @StudentSurName,
                     Sex = @Sex,
+                    PhoneNo = @PhoneNo,
                     FatherName = @FatherName,
                     MotherName = @MotherName,
+                    DOA = @DOA,
                     DOB = @DOB,
                     FatherPhone = @FatherPhone,
                     AppliedClass = @AppliedClass,
                     SectionName = @SectionName,
+                    AppliedStream = @AppliedStream,
+                    AppliedMedium = @AppliedMedium,
+                    Area = @Area,
+                    Mode = @Mode,
+                    Board = @Board,
+                    CasteName = @CasteName,
+                    City = @City,
+                    Email = @Email,
                     FatherAddress = @FatherAddress
                 WHERE Scholarno = @Scholarno AND school_Id = @school_Id
             `);
