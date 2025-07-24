@@ -4,8 +4,8 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const XLSX = require("xlsx");
-// const sql = require("mssql/msnodesqlv8");
-const sql = require("mssql");
+const sql = require("mssql/msnodesqlv8");
+// const sql = require("mssql");
 const cors = require("cors");
 
 const app = express();
@@ -15,16 +15,17 @@ app.use(express.json());
 
 // Configure SQL Server connection
 const sqlConfig = {
-  // server: "LAPTOP-JO66B6L3\\SQLEXPRESS", // Use 'server' instead of 'host' for mssql
-  // database: "DPSTEST",
+  // server: "HS-211-55211\\SQLEXPRESS", // Use 'server' instead of 'host' for mssql
+  // database: "Enlighten_App",
+  // user: "HS-211-55211\\sysadminhs",
   // options: {
   //   trustedConnection: true,
-  //   // encrypt: true,
-  //   // trustServerCertificate: true  // Needed for local development
+  //   encrypt: true,
+  //   trustServerCertificate: true  // Needed for local development
   // },
-  user: "dpsuser",
-  password: "dps@123",
-  server: "150.242.203.229", // SQL Server address
+  user: "sa",
+  password: "DPSTECH@123",
+  server: "168.220.237.211", // SQL Server address
   database: "Enlighten_App",
   options: {
     encrypt: false, // Set to true if using Azure
@@ -32,6 +33,9 @@ const sqlConfig = {
     multipleActiveResultSets: true,
   },
 };
+
+
+
 
 sql
   .connect(sqlConfig)
