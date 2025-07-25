@@ -4,8 +4,8 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const XLSX = require("xlsx");
-const sql = require("mssql/msnodesqlv8");
-// const sql = require("mssql");
+// const sql = require("mssql/msnodesqlv8");
+const sql = require("mssql");
 const cors = require("cors");
 
 const app = express();
