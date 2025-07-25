@@ -224,6 +224,20 @@ app.post("/api/v1/students", async (req, res) => {
   try {
     pool = await sql.connect(sqlConfig);
 
+    const existingStudent = await pool
+      .request()
+      .input("Scholarno", sql.NVarChar(50), Scholarno)
+      .input("school_code", sql.NVarChar(50), school_code)
+      .query(`
+        SELECT 1 FROM Student_Master 
+        WHERE Scholarno = @Scholarno AND school_code = @school_code
+      `);
+
+    if (existingStudent.recordset.length > 0) {
+      return res.status(409).json({
+        error: "Student with this ScholarNo and school code already exists",
+      });
+    }
     // Insert student record
     const result = await pool
       .request()
