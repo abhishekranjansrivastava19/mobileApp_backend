@@ -207,6 +207,8 @@ app.post("/api/v1/students", async (req, res) => {
     CasteName,
     City,
     Email,
+    created_date,
+    type,
     FatherAddress,
   } = req.body;
 
@@ -247,13 +249,15 @@ app.post("/api/v1/students", async (req, res) => {
       .input("CasteName", sql.NVarChar(50), CasteName)
       .input("City", sql.NVarChar(50), City)
       .input("Email", sql.NVarChar(50), Email)
+      .input("created_date", sql.NVarChar(50), created_date)
+      .input("type", sql.NVarChar(50), type)
       .input("FatherAddress", sql.NVarChar(200), FatherAddress || null).query(`
         INSERT INTO Student_Master (
           school_Id, school_code, Scholarno, StudentName, StudentSurName, Sex, PhoneNo, FatherName,
-          MotherName, DOA, DOB, FatherPhone, AppliedClass, SectionName, AppliedStream, AppliedMedium, Area, Mode, Board, CasteName, City, Email, FatherAddress
+          MotherName, DOA, DOB, FatherPhone, AppliedClass, SectionName, AppliedStream, AppliedMedium, Area, Mode, Board, CasteName, City, Email, created_date, type, FatherAddress
         ) VALUES (
           @school_Id, @school_code, @Scholarno, @StudentName, @StudentSurName, @Sex, @PhoneNo, @FatherName,
-          @MotherName, @DOA, @DOB, @FatherPhone, @AppliedClass, @SectionName, @AppliedStream, @AppliedMedium, @Area, @Mode, @Board, @CasteName, @City, @Email, @FatherAddress
+          @MotherName, @DOA, @DOB, @FatherPhone, @AppliedClass, @SectionName, @AppliedStream, @AppliedMedium, @Area, @Mode, @Board, @CasteName, @City, @Email, @created_date, @type, @FatherAddress
         )
       `);
 
