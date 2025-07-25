@@ -250,7 +250,7 @@ app.post("/api/v1/students", async (req, res) => {
       .input("FatherAddress", sql.NVarChar(200), FatherAddress || null).query(`
         INSERT INTO Student_Master (
           school_Id, school_code, Scholarno, StudentName, StudentSurName, Sex, PhoneNo, FatherName,
-          MotherName, DOA, DOB, FatherPhone, AppliedClass, SectionName, AppliedStream, AppliedMedium, Area, Mode, Board, CastName, City, Email, FatherAddress
+          MotherName, DOA, DOB, FatherPhone, AppliedClass, SectionName, AppliedStream, AppliedMedium, Area, Mode, Board, CasteName, City, Email, FatherAddress
         ) VALUES (
           @school_Id, @school_code, @Scholarno, @StudentName, @StudentSurName, @Sex, @PhoneNo, @FatherName,
           @MotherName, @DOA, @DOB, @FatherPhone, @AppliedClass, @SectionName, @AppliedStream, @AppliedMedium, @Area, @Mode, @Board, @CasteName, @City, @Email, @FatherAddress
