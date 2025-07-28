@@ -85,12 +85,20 @@ const upload = multer({
 // Example of connecting to the database
 
 app.post("/import-data", upload.single("file"), async (req, res) => {
+
   if (!req.file) {
     return res.status(400).json({
       success: false,
       message: "File is required.",
     });
   }
+
+  //  if (!req.body) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     message: "Signature required"
+  //   })
+  // }
 
   try {
     const filePath = path.join(__dirname, "..", "uploads", req.file.filename);
@@ -419,6 +427,40 @@ app.put("/api/v1/updatestu", async (req, res) => {
     if (pool) await pool.close();
   }
 });
+
+app.get("/api/v1/count", async (req, res) => {
+  let pool
+  try {
+    pool = await sql.connect(sqlConfig)
+
+    const active = await pool.request().query(`
+      SELECT
+          COUNT(*) AS active_count
+      FROM
+          School_Master
+      WHERE
+          school_active = 'true';
+    `);
+
+
+    const inactive = await pool.request().query(`
+      SELECT
+          COUNT(*) AS inactive_count
+      FROM
+          School_Master
+      WHERE
+          school_active = 'false';        
+    `);
+
+
+    return res.status(200).json({
+      active : active.recordset[0].active_count,
+      inactive : inactive.recordset[0].inactive_count
+    })
+  } catch (error) {
+    console.log(error)
+  }
+})
 
 process.on("SIGINT", async () => {
   await pool.close();
