@@ -446,42 +446,57 @@ app.put("/api/v1/updatestu", async (req, res) => {
   }
 });
 
+
+
+
 app.get("/api/v1/count", async (req, res) => {
-  let pool
+  let pool;
   try {
-    pool = await sql.connect(sqlConfig)
+    pool = await sql.connect(sqlConfig);
 
     const active = await pool.request().query(`
       SELECT
-          COUNT(*) AS active_count
+        COUNT(*) AS active_count
       FROM
-          School_Master
+        School_Master
       WHERE
-          school_active = 'true';
+        school_active = 'true';
     `);
-
 
     const inactive = await pool.request().query(`
       SELECT
-          COUNT(*) AS inactive_count
+        COUNT(*) AS inactive_count
       FROM
-          School_Master
+        School_Master
       WHERE
-          school_active = 'false';        
+        school_active = 'false';        
     `);
 
+    const activeDetails = await pool.request().query(`
+      SELECT * FROM School_Master WHERE school_active = 'true';
+    `);
+
+    const inactiveDetails = await pool.request().query(`
+      SELECT * FROM School_Master WHERE school_active = 'false';
+    `);
 
     return res.status(200).json({
-      active : active.recordset[0].active_count,
-      inactive : inactive.recordset[0].inactive_count
-    })
+      count: {
+        active: active.recordset[0].active_count,
+        inactive: inactive.recordset[0].inactive_count
+      },
+      activeSchools: activeDetails.recordset,
+      inactiveSchools: inactiveDetails.recordset
+    });
+
   } catch (error) {
-    console.log(error)
+    console.error("Error fetching school counts and details:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
-})
+});
 
 
-// GET a setting by school_code
+
 app.get('/api/themes/:school_code', async (req, res) => {
   const { school_code } = req.params;
   try {
