@@ -36,6 +36,28 @@ const sqlConfig = {
 
 
 
+const dbConfig = {
+  // server: "HS-211-55211\\SQLEXPRESS", // Use 'server' instead of 'host' for mssql
+  // database: "Enlighten_App",
+  // user: "HS-211-55211\\sysadminhs",
+  // options: {
+  //   trustedConnection: true,
+  //   encrypt: true,
+  //   trustServerCertificate: true  // Needed for local development
+  // },
+  user: "sa",
+  password: "DPSTECH@123",
+  server: "168.220.237.211", // SQL Server address
+  database: "Theme",
+  options: {
+    encrypt: false, // Set to true if using Azure
+    enableArithAbort: true,
+    multipleActiveResultSets: true,
+  },
+};
+
+
+
 
 sql
   .connect(sqlConfig)
@@ -79,10 +101,6 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
 });
-
-// const upload = multer({ dest: "uploads/" });
-
-// Example of connecting to the database
 
 app.post("/import-data", upload.single("file"), async (req, res) => {
 
@@ -461,6 +479,128 @@ app.get("/api/v1/count", async (req, res) => {
     console.log(error)
   }
 })
+
+
+// GET a setting by school_code
+app.get('/api/themes/:school_code', async (req, res) => {
+  const { school_code } = req.params;
+  try {
+    const pool = await sql.connect(dbConfig);
+    const result = await pool.request()
+      .input('school_code', sql.VarChar, school_code)
+      .query('SELECT * FROM school_theme_settings WHERE school_code = @school_code');
+    
+    if (result.recordset.length === 0) {
+      res.status(404).send('School theme not found.');
+    } else {
+      res.json(result.recordset[0]);
+    }
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+// POST a new setting
+app.post('/api/themes', async (req, res) => {
+  const {
+    school_code,
+    background,
+    primary_color,
+    navigator_color,
+    header,
+    sidebar,
+    body_font,
+    sidebar_position
+  } = req.body;
+
+  try {
+    const pool = await sql.connect(dbConfig);
+    await pool.request()
+      .input('school_code', sql.VarChar, school_code)
+      .input('background', sql.VarChar, background)
+      .input('primary_color', sql.VarChar, primary_color)
+      .input('navigator_color', sql.VarChar, navigator_color)
+      .input('header', sql.VarChar, header)
+      .input('sidebar', sql.VarChar, sidebar)
+      .input('body_font', sql.VarChar, body_font)
+      .input('sidebar_position', sql.VarChar, sidebar_position)
+      .query(`
+        INSERT INTO school_theme_settings 
+        (school_code, background, primary_color, navigator_color, header, sidebar, body_font, sidebar_position)
+        VALUES (@school_code, @background, @primary_color, @navigator_color, @header, @sidebar, @body_font, @sidebar_position)
+      `);
+    res.status(201).send('Theme inserted successfully.');
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+// PUT (update) setting by school_code
+app.put('/api/themes/:school_code', async (req, res) => {
+  const { school_code } = req.params;
+  const {
+    background,
+    primary_color,
+    navigator_color,
+    header,
+    sidebar,
+    body_font,
+    sidebar_position
+  } = req.body;
+
+  try {
+    const pool = await sql.connect(dbConfig);
+    const result = await pool.request()
+      .input('school_code', sql.VarChar, school_code)
+      .input('background', sql.VarChar, background)
+      .input('primary_color', sql.VarChar, primary_color)
+      .input('navigator_color', sql.VarChar, navigator_color)
+      .input('header', sql.VarChar, header)
+      .input('sidebar', sql.VarChar, sidebar)
+      .input('body_font', sql.VarChar, body_font)
+      .input('sidebar_position', sql.VarChar, sidebar_position)
+      .query(`
+        UPDATE school_theme_settings
+        SET background = @background,
+            primary_color = @primary_color,
+            navigator_color = @navigator_color,
+            header = @header,
+            sidebar = @sidebar,
+            body_font = @body_font,
+            sidebar_position = @sidebar_position,
+            updated_at = GETDATE()
+        WHERE school_code = @school_code
+      `);
+    
+    if (result.rowsAffected[0] === 0) {
+      res.status(404).send('School theme not found.');
+    } else {
+      res.send('Theme updated successfully.');
+    }
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+// DELETE setting by school_code
+app.delete('/api/themes/:school_code', async (req, res) => {
+  const { school_code } = req.params;
+
+  try {
+    const pool = await sql.connect(dbConfig);
+    const result = await pool.request()
+      .input('school_code', sql.VarChar, school_code)
+      .query('DELETE FROM school_theme_settings WHERE school_code = @school_code');
+    
+    if (result.rowsAffected[0] === 0) {
+      res.status(404).send('School theme not found.');
+    } else {
+      res.send('Theme deleted successfully.');
+    }
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
 
 process.on("SIGINT", async () => {
   await pool.close();
