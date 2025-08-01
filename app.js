@@ -493,8 +493,6 @@ app.get('/api/v1/themes/:school_code', async (req, res) => {
   const { school_code } = req.params;
   try {
     const pool = await sql.connect(dbConfig);
-
-    console.log(pool)
     const result = await pool.request()
       .input('school_code', sql.VarChar, school_code)
       .query('SELECT * FROM school_theme_settings WHERE school_code = @school_code');
