@@ -161,7 +161,7 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
         .input("Email", sql.NVarChar, row.Email)
         .input("created_date", sql.DateTime, row.created_date || new Date())
         .input("type", sql.NVarChar, row.type)
-        .input("school_Id", sql.Int, row.school_Id)
+        .input("school_Id", sql.NVarChar, row.school_Id)
         .input("school_code", sql.NVarChar, row.school_code)
         .input("Scholarno", sql.NVarChar, row.Scholarno)
         .input("img", sql.NVarChar, row.img).query(`
