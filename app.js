@@ -459,13 +459,13 @@ app.get("/api/v1/count", async (req, res) => {
       SELECT
         COUNT(*) AS inactive_count
       FROM
-        School_Master
+        School_Master 
       WHERE
         school_active = 'false';        
     `);
 
     const activeDetails = await pool.request().query(`
-      SELECT * FROM School_Master WHERE school_active = 'true';
+      SELECT * FROM School_Master WHERE school_active = 'true'; 
     `);
 
     const inactiveDetails = await pool.request().query(`
