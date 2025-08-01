@@ -37,14 +37,6 @@ const sqlConfig = {
 
 
 const dbConfig = {
-  // server: "HS-211-55211\\SQLEXPRESS", // Use 'server' instead of 'host' for mssql
-  // database: "Enlighten_App",
-  // user: "HS-211-55211\\sysadminhs",
-  // options: {
-  //   trustedConnection: true,
-  //   encrypt: true,
-  //   trustServerCertificate: true  // Needed for local development
-  // },
   user: "sa",
   password: "DPSTECH@123",
   server: "168.220.237.211", // SQL Server address
@@ -497,10 +489,12 @@ app.get("/api/v1/count", async (req, res) => {
 
 
 
-app.get('/api/themes/:school_code', async (req, res) => {
+app.get('/api/v1/themes/:school_code', async (req, res) => {
   const { school_code } = req.params;
   try {
     const pool = await sql.connect(dbConfig);
+
+    console.log(pool)
     const result = await pool.request()
       .input('school_code', sql.VarChar, school_code)
       .query('SELECT * FROM school_theme_settings WHERE school_code = @school_code');
@@ -516,7 +510,7 @@ app.get('/api/themes/:school_code', async (req, res) => {
 });
 
 // POST a new setting
-app.post('/api/themes', async (req, res) => {
+app.post('/api/v1/themes', async (req, res) => {
   const {
     school_code,
     background,
@@ -551,7 +545,7 @@ app.post('/api/themes', async (req, res) => {
 });
 
 // PUT (update) setting by school_code
-app.put('/api/themes/:school_code', async (req, res) => {
+app.put('/api/v1/themes/:school_code', async (req, res) => {
   const { school_code } = req.params;
   const {
     background,
@@ -598,7 +592,7 @@ app.put('/api/themes/:school_code', async (req, res) => {
 });
 
 // DELETE setting by school_code
-app.delete('/api/themes/:school_code', async (req, res) => {
+app.delete('/api/v1/themes/:school_code', async (req, res) => {
   const { school_code } = req.params;
 
   try {
