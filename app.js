@@ -138,7 +138,7 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
         .request()
         .input("StudentName", sql.NVarChar, row.StudentName)
         .input("StudentSurName", sql.NVarChar, row.StudentSurName)
-        .input("DOA", sql.DateTime, row.DOA)
+        .input("DOA", sql.NVarChar, row.DOA)
         .input("DOB", sql.DateTime, row.DOB)
         .input("Language", sql.NVarChar, row.Language)
         .input("Sex", sql.NVarChar, row.Sex)
