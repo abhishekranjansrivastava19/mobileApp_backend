@@ -34,8 +34,6 @@ const sqlConfig = {
   },
 };
 
-
-
 const dbConfig = {
   user: "sa",
   password: "DPSTECH@123",
@@ -47,9 +45,6 @@ const dbConfig = {
     multipleActiveResultSets: true,
   },
 };
-
-
-
 
 sql
   .connect(sqlConfig)
@@ -94,8 +89,31 @@ const upload = multer({
   },
 });
 
-app.post("/import-data", upload.single("file"), async (req, res) => {
+let poolPromise = null;
+async function getPool() {
+  if (!poolPromise) {
+    poolPromise = new sql.ConnectionPool(sqlConfig)
+      .connect()
+      .then((pool) => {
+        console.log("✅ Connected to MSSQL");
+        return pool;
+      })
+      .catch((err) => {
+        console.error("❌ Database Connection Failed -", err);
+        poolPromise = null; // reset if failed
+        throw err;
+      });
+  }
+  return poolPromise;
+}
 
+// Convert everything → string (NVARCHAR)
+function toText(value) {
+  if (value === undefined || value === null) return "";
+  return String(value);
+}
+
+app.post("/import-data", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({
       success: false,
@@ -103,96 +121,118 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
     });
   }
 
-  //  if (!req.body) {
-  //   return res.status(400).json({
-  //     success: false,
-  //     message: "Signature required"
-  //   })
-  // }
+  const filePath = path.join(__dirname, "..", "uploads", req.file.filename);
+  let transaction;
 
   try {
-    const filePath = path.join(__dirname, "..", "uploads", req.file.filename);
+    // ⿡ Read Excel -> JSON
     const workbook = XLSX.readFile(filePath);
     const sheet = workbook.SheetNames[0];
     const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheet]);
 
-    const poolPromise = new sql.ConnectionPool(sqlConfig)
-      .connect()
-      .then((pool) => {
-        console.log("✅ Connected to MSSQL (Windows Auth)");
-        return pool;
-      })
-
-      .catch((err) => {
-        console.error("❌ Database Connection Failed - ", err);
-        throw err;
+    if (!data || data.length === 0) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({
+        success: false,
+        message: "Excel file is empty or invalid.",
       });
+    }
 
-    const pool = await poolPromise;
+    const pool = await getPool();
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    const request = new sql.Request(transaction);
+
+    function parseDate(value) {
+      if (!value) return null;
+      const date = new Date(value);
+      return isNaN(date) ? null : date; // returns null if invalid
+    }
+
     let inserted = 0;
 
     for (const row of data) {
       if (!row.school_Id || !row.Scholarno || !row.StudentName) continue;
 
-      await pool
-        .request()
-        .input("StudentName", sql.NVarChar, row.StudentName)
-        .input("StudentSurName", sql.NVarChar, row.StudentSurName)
-        .input("DOA", sql.DateTime, row.DOA)
-        .input("DOB", sql.DateTime, row.DOB)
-        .input("Language", sql.NVarChar, row.Language)
-        .input("Sex", sql.NVarChar, row.Sex)
-        .input("PhoneNo", sql.NVarChar, row.PhoneNo)
-        .input("FatherName", sql.NVarChar, row.FatherName)
-        .input("FatherAddress", sql.NVarChar, row.FatherAddress)
-        .input("FatherPhone", sql.NVarChar, row.FatherPhone)
-        .input("FatherOccupation", sql.NVarChar, row.FatherOccupation)
-        .input("MotherName", sql.NVarChar, row.MotherName)
-        .input("MotherPhone", sql.NVarChar, row.MotherPhone)
-        .input("AppliedClass", sql.NVarChar, row.AppliedClass)
-        .input("AppliedStream", sql.NVarChar, row.AppliedStream)
-        .input("AppliedMedium", sql.NVarChar, row.AppliedMedium)
-        .input("SectionName", sql.NVarChar, row.SectionName)
-        .input("Area", sql.NVarChar, row.Area)
-        .input("Mode", sql.NVarChar, row.Mode)
-        .input("Board", sql.NVarChar, row.Board)
-        .input("CasteName", sql.NVarChar, row.CasteName)
-        .input("City", sql.NVarChar, row.City)
-        .input("Email", sql.NVarChar, row.Email)
-        .input("created_date", sql.DateTime, row.created_date || new Date())
-        .input("type", sql.NVarChar, row.type)
-        .input("school_Id", sql.NVarChar, row.school_Id)
-        .input("school_code", sql.NVarChar, row.school_code)
-        .input("Scholarno", sql.NVarChar, row.Scholarno)
-        .input("img", sql.NVarChar, row.img).query(`
-          INSERT INTO Student_Master (
-            StudentName, StudentSurName, DOA, DOB, Language, Sex, PhoneNo,
-            FatherName, FatherAddress, FatherPhone, FatherOccupation,
-            MotherName, MotherPhone, AppliedClass, AppliedStream, AppliedMedium,
-            SectionName, Area, Mode, Board, CasteName, City, Email,
-            created_date, type, school_Id, school_code, Scholarno, img
-          )
-          VALUES (
-            @StudentName, @StudentSurName, @DOA, @DOB, @Language, @Sex, @PhoneNo,
-            @FatherName, @FatherAddress, @FatherPhone, @FatherOccupation,
-            @MotherName, @MotherPhone, @AppliedClass, @AppliedStream, @AppliedMedium,
-            @SectionName, @Area, @Mode, @Board, @CasteName, @City, @Email,
-            @created_date, @type, @school_Id, @school_code, @Scholarno, @img
-          )
-        `);
+      const request = new sql.Request(transaction); // create NEW request per row
+
+      await request
+        .input("StudentName", sql.NVarChar, toText(row.StudentName))
+        .input("StudentSurName", sql.NVarChar, toText(row.StudentSurName))
+        .input("DOA", sql.NVarChar, toText(row.DOA))
+        .input("DOB", sql.DateTime, parseDate(row.DOB))
+        .input("Language", sql.NVarChar, toText(row.Language))
+        .input("Sex", sql.NVarChar, toText(row.Sex))
+        .input("PhoneNo", sql.NVarChar, toText(row.PhoneNo))
+        .input("FatherName", sql.NVarChar, toText(row.FatherName))
+        .input("FatherAddress", sql.NVarChar, toText(row.FatherAddress))
+        .input("FatherPhone", sql.NVarChar, toText(row.FatherPhone))
+        .input("FatherOccupation", sql.NVarChar, toText(row.FatherOccupation))
+        .input("MotherName", sql.NVarChar, toText(row.MotherName))
+        .input("MotherPhone", sql.NVarChar, toText(row.MotherPhone))
+        .input("AppliedClass", sql.NVarChar, toText(row.AppliedClass))
+        .input("AppliedStream", sql.NVarChar, toText(row.AppliedStream))
+        .input("AppliedMedium", sql.NVarChar, toText(row.AppliedMedium))
+        .input("SectionName", sql.NVarChar, toText(row.SectionName))
+        .input("Area", sql.NVarChar, toText(row.Area))
+        .input("Mode", sql.NVarChar, toText(row.Mode))
+        .input("Board", sql.NVarChar, toText(row.Board))
+        .input("CasteName", sql.NVarChar, toText(row.CasteName))
+        .input("City", sql.NVarChar, toText(row.City))
+        .input("Email", sql.NVarChar, toText(row.Email))
+        .input(
+          "created_date",
+          sql.DateTime,
+          parseDate(row.created_date) || new Date()
+        )
+        .input("type", sql.NVarChar, toText(row.type))
+        .input("school_Id", sql.NVarChar, toText(row.school_Id))
+        .input("school_code", sql.NVarChar, toText(row.school_code))
+        .input("Scholarno", sql.NVarChar, toText(row.Scholarno))
+        .input("img", sql.NVarChar, toText(row.img)).query(`
+      INSERT INTO Student_Master (
+        StudentName, StudentSurName, DOA, DOB, Language, Sex, PhoneNo,
+        FatherName, FatherAddress, FatherPhone, FatherOccupation,
+        MotherName, MotherPhone, AppliedClass, AppliedStream, AppliedMedium,
+        SectionName, Area, Mode, Board, CasteName, City, Email,
+        created_date, type, school_Id, school_code, Scholarno, img
+      )
+      VALUES (
+        @StudentName, @StudentSurName, @DOA, @DOB, @Language, @Sex, @PhoneNo,
+        @FatherName, @FatherAddress, @FatherPhone, @FatherOccupation,
+        @MotherName, @MotherPhone, @AppliedClass, @AppliedStream, @AppliedMedium,
+        @SectionName, @Area, @Mode, @Board, @CasteName, @City, @Email,
+        @created_date, @type, @school_Id, @school_code, @Scholarno, @img
+      )
+    `);
 
       inserted++;
     }
+
+    await transaction.commit(); // ✅ commit all inserts
 
     fs.unlinkSync(filePath);
 
     res.status(201).json({
       success: true,
       inserted,
-      message: "Inserted ${inserted} student records.",
+      message: `Inserted ${inserted} student records`,
     });
   } catch (error) {
+    if (transaction) await transaction.rollback();
+    console.error("Rollback failed:", error);
     console.error("❌ Import error:", error);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    try {
+      if (transaction) await transaction.rollback(); // ❌ rollback on error
+    } catch (rollbackErr) {
+      console.error("Rollback failed:", rollbackErr);
+    }
+
     res.status(500).json({
       success: false,
       message: "Error importing data",
@@ -245,8 +285,7 @@ app.post("/api/v1/students", async (req, res) => {
     const existingStudent = await pool
       .request()
       .input("Scholarno", sql.NVarChar(50), Scholarno)
-      .input("school_code", sql.NVarChar(50), school_code)
-      .query(`
+      .input("school_code", sql.NVarChar(50), school_code).query(`
         SELECT 1 FROM Student_Master 
         WHERE Scholarno = @Scholarno AND school_code = @school_code
       `);
@@ -438,9 +477,6 @@ app.put("/api/v1/updatestu", async (req, res) => {
   }
 });
 
-
-
-
 app.get("/api/v1/count", async (req, res) => {
   let pool;
   try {
@@ -475,30 +511,30 @@ app.get("/api/v1/count", async (req, res) => {
     return res.status(200).json({
       count: {
         active: active.recordset[0].active_count,
-        inactive: inactive.recordset[0].inactive_count
+        inactive: inactive.recordset[0].inactive_count,
       },
       activeSchools: activeDetails.recordset,
-      inactiveSchools: inactiveDetails.recordset
+      inactiveSchools: inactiveDetails.recordset,
     });
-
   } catch (error) {
     console.error("Error fetching school counts and details:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-
-
-app.get('/api/v1/themes/:school_code', async (req, res) => {
+app.get("/api/v1/themes/:school_code", async (req, res) => {
   const { school_code } = req.params;
   try {
     const pool = await sql.connect(dbConfig);
-    const result = await pool.request()
-      .input('school_code', sql.VarChar, school_code)
-      .query('SELECT * FROM school_theme_settings WHERE school_code = @school_code');
-    
+    const result = await pool
+      .request()
+      .input("school_code", sql.VarChar, school_code)
+      .query(
+        "SELECT * FROM school_theme_settings WHERE school_code = @school_code"
+      );
+
     if (result.recordset.length === 0) {
-      res.status(404).send('School theme not found.');
+      res.status(404).send("School theme not found.");
     } else {
       res.json(result.recordset[0]);
     }
@@ -508,7 +544,7 @@ app.get('/api/v1/themes/:school_code', async (req, res) => {
 });
 
 // POST a new setting
-app.post('/api/v1/themes', async (req, res) => {
+app.post("/api/v1/themes", async (req, res) => {
   const {
     school_code,
     background,
@@ -517,33 +553,33 @@ app.post('/api/v1/themes', async (req, res) => {
     header,
     sidebar,
     body_font,
-    sidebar_position
+    sidebar_position,
   } = req.body;
 
   try {
     const pool = await sql.connect(dbConfig);
-    await pool.request()
-      .input('school_code', sql.VarChar, school_code)
-      .input('background', sql.VarChar, background)
-      .input('primary_color', sql.VarChar, primary_color)
-      .input('navigator_color', sql.VarChar, navigator_color)
-      .input('header', sql.VarChar, header)
-      .input('sidebar', sql.VarChar, sidebar)
-      .input('body_font', sql.VarChar, body_font)
-      .input('sidebar_position', sql.VarChar, sidebar_position)
-      .query(`
+    await pool
+      .request()
+      .input("school_code", sql.VarChar, school_code)
+      .input("background", sql.VarChar, background)
+      .input("primary_color", sql.VarChar, primary_color)
+      .input("navigator_color", sql.VarChar, navigator_color)
+      .input("header", sql.VarChar, header)
+      .input("sidebar", sql.VarChar, sidebar)
+      .input("body_font", sql.VarChar, body_font)
+      .input("sidebar_position", sql.VarChar, sidebar_position).query(`
         INSERT INTO school_theme_settings 
         (school_code, background, primary_color, navigator_color, header, sidebar, body_font, sidebar_position)
         VALUES (@school_code, @background, @primary_color, @navigator_color, @header, @sidebar, @body_font, @sidebar_position)
       `);
-    res.status(201).send('Theme inserted successfully.');
+    res.status(201).send("Theme inserted successfully.");
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
 
 // PUT (update) setting by school_code
-app.put('/api/v1/themes/:school_code', async (req, res) => {
+app.put("/api/v1/themes/:school_code", async (req, res) => {
   const { school_code } = req.params;
   const {
     background,
@@ -552,21 +588,21 @@ app.put('/api/v1/themes/:school_code', async (req, res) => {
     header,
     sidebar,
     body_font,
-    sidebar_position
+    sidebar_position,
   } = req.body;
 
   try {
     const pool = await sql.connect(dbConfig);
-    const result = await pool.request()
-      .input('school_code', sql.VarChar, school_code)
-      .input('background', sql.VarChar, background)
-      .input('primary_color', sql.VarChar, primary_color)
-      .input('navigator_color', sql.VarChar, navigator_color)
-      .input('header', sql.VarChar, header)
-      .input('sidebar', sql.VarChar, sidebar)
-      .input('body_font', sql.VarChar, body_font)
-      .input('sidebar_position', sql.VarChar, sidebar_position)
-      .query(`
+    const result = await pool
+      .request()
+      .input("school_code", sql.VarChar, school_code)
+      .input("background", sql.VarChar, background)
+      .input("primary_color", sql.VarChar, primary_color)
+      .input("navigator_color", sql.VarChar, navigator_color)
+      .input("header", sql.VarChar, header)
+      .input("sidebar", sql.VarChar, sidebar)
+      .input("body_font", sql.VarChar, body_font)
+      .input("sidebar_position", sql.VarChar, sidebar_position).query(`
         UPDATE school_theme_settings
         SET background = @background,
             primary_color = @primary_color,
@@ -578,11 +614,11 @@ app.put('/api/v1/themes/:school_code', async (req, res) => {
             updated_at = GETDATE()
         WHERE school_code = @school_code
       `);
-    
+
     if (result.rowsAffected[0] === 0) {
-      res.status(404).send('School theme not found.');
+      res.status(404).send("School theme not found.");
     } else {
-      res.send('Theme updated successfully.');
+      res.send("Theme updated successfully.");
     }
   } catch (err) {
     res.status(500).send(err.message);
@@ -590,19 +626,22 @@ app.put('/api/v1/themes/:school_code', async (req, res) => {
 });
 
 // DELETE setting by school_code
-app.delete('/api/v1/themes/:school_code', async (req, res) => {
+app.delete("/api/v1/themes/:school_code", async (req, res) => {
   const { school_code } = req.params;
 
   try {
     const pool = await sql.connect(dbConfig);
-    const result = await pool.request()
-      .input('school_code', sql.VarChar, school_code)
-      .query('DELETE FROM school_theme_settings WHERE school_code = @school_code');
-    
+    const result = await pool
+      .request()
+      .input("school_code", sql.VarChar, school_code)
+      .query(
+        "DELETE FROM school_theme_settings WHERE school_code = @school_code"
+      );
+
     if (result.rowsAffected[0] === 0) {
-      res.status(404).send('School theme not found.');
+      res.status(404).send("School theme not found.");
     } else {
-      res.send('Theme deleted successfully.');
+      res.send("Theme deleted successfully.");
     }
   } catch (err) {
     res.status(500).send(err.message);
@@ -615,5 +654,5 @@ process.on("SIGINT", async () => {
 });
 
 app.listen(3002, () => {
-  console.log(`Server running on port  http://localhost:3002`);
+  console.log("Server running on port  http://localhost:3002");
 });
