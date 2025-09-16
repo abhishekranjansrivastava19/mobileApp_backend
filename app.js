@@ -9,7 +9,16 @@ const sql = require("mssql");
 const cors = require("cors");
 
 const app = express();
-app.use(cors("*"));
+// app.use(cors("*"));
+
+
+app.use(cors({
+  origin: ["http://localhost:5173", "https://mobileappapi.dpserp.com"], // allow your React dev & prod
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
+
 
 app.use(express.json());
 
