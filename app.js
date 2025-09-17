@@ -9,16 +9,11 @@ const sql = require("mssql");
 const cors = require("cors");
 
 const app = express();
-// app.use(cors("*"));
-
-
 app.use(cors({
-  origin: ["http://localhost:5173", "https://mobileappapi.dpserp.com"], // allow your React dev & prod
+  origin: "*",   // your frontend URL
   methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
-
 
 app.use(express.json());
 
@@ -249,6 +244,102 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
     });
   }
 });
+
+app.get("/download-import-data", async (req, res) => {
+  try {
+    const pool = await getPool(); // reuse your existing pool function
+
+    // Fetch only required fields
+    const result = await pool.request().query(`
+      SELECT 
+        StudentName, 
+        StudentSurName, 
+        FatherName, 
+        FatherPhone, 
+        school_Id, 
+        school_code, 
+        Scholarno
+      FROM Student_Master
+    `);
+
+    const students = result.recordset;
+
+    if (!students || students.length === 0) {
+      return res.status(404).send("No student data found");
+    }
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(students);
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+
+    const filePath = path.join(__dirname, "..", "uploads", "StudentData.xlsx");
+    XLSX.writeFile(workbook, filePath);
+
+    res.download(filePath, "StudentData.xlsx", (err) => {
+      if (err) {
+        console.error("Error sending file:", err);
+        res.status(500).send("Error downloading file");
+      }
+
+      // Delete file after sending
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    });
+  } catch (error) {
+    console.error("Error creating Excel file:", error);
+    res.status(500).send("Error generating Excel file");
+  }
+});
+
+
+app.delete("/delete-school/:school_Id", async (req, res) => {
+  const { school_Id } = req.params;
+
+  if (!school_Id) {
+    return res.status(400).json({ success: false, message: "school_Id is required" });
+  }
+
+  let transaction;
+
+  try {
+    const pool = await getPool();
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+
+    const request = new sql.Request(transaction);
+
+    // Example: delete from multiple tables where school_Id matches
+    await request.query(`DELETE FROM Student_Master WHERE school_Id = '${school_Id}'`);
+    await request.query(`DELETE FROM School_Master WHERE school_Id = '${school_Id}'`);
+    await request.query(`DELETE FROM Section_master WHERE school_Id = '${school_Id}'`);
+    await request.query(`DELETE FROM Admin_Notice WHERE school_Id = '${school_Id}'`);
+    await request.query(`DELETE FROM Allotment_Master WHERE school_Id = '${school_Id}'`);
+    await request.query(`DELETE FROM Assign_Master WHERE school_Id = '${school_Id}'`);
+    await request.query(`DELETE FROM Attendence_Master WHERE school_Id = '${school_Id}'`);
+    await request.query(`DELETE FROM Class_Master WHERE school_Id = '${school_Id}'`);
+    await request.query(`DELETE FROM Exam_Calender WHERE school_Id = '${school_Id}'`);
+    await request.query(`DELETE FROM Exam_type WHERE school_Id = '${school_Id}'`);
+    await request.query(`DELETE FROM Holiday_Calender WHERE school_Id = '${school_Id}'`);
+    await request.query(`DELETE FROM Marks_Master WHERE school_Id = '${school_Id}'`);
+    await request.query(`DELETE FROM Query_Master WHERE school_Id = '${school_Id}'`);
+    await request.query(`DELETE FROM Result_Publish WHERE school_Id = '${school_Id}'`);
+    // Add more tables as needed
+    
+    await transaction.commit();
+
+    res.status(200).json({
+      success: true,
+      message: `All data for school_Id ${school_Id} has been deleted successfully`,
+    });
+  } catch (error) {
+    if (transaction) await transaction.rollback();
+    console.error("Error deleting school data:", error);
+    res.status(500).json({ success: false, message: "Error deleting school data", error: error.message });
+  }
+});
+
 
 app.post("/api/v1/students", async (req, res) => {
   const {
