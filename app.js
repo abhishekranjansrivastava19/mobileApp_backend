@@ -111,10 +111,29 @@ async function getPool() {
   return poolPromise;
 }
 
+
 // Convert everything → string (NVARCHAR)
 function toText(value) {
   if (value === undefined || value === null) return "";
   return String(value);
+}
+
+let clients = [];
+
+app.get("/progress", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  clients.push(res);
+
+  req.on("close", () => {
+    clients = clients.filter((c) => c !== res);
+  });
+});
+
+function sendProgress(progress) {
+  clients.forEach((res) => res.write(`data: ${progress}\n\n`));
 }
 
 app.post("/import-data", upload.single("file"), async (req, res) => {
@@ -152,7 +171,7 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
       const date = new Date(value);
       return isNaN(date) ? null : date; // returns null if invalid
     }
-
+ const total = data.length;
     let inserted = 0;
 
     for (const row of data) {
@@ -211,6 +230,8 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
     `);
 
       inserted++;
+      const percent = Math.round((inserted / total) * 100);
+      sendProgress(percent); // 🔥 send live progress
     }
 
     await transaction.commit(); // ✅ commit all inserts
@@ -245,6 +266,7 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
   }
 });
 
+
 app.get("/download-import-data", async (req, res) => {
   try {
     const pool = await getPool(); // reuse your existing pool function
@@ -258,7 +280,10 @@ app.get("/download-import-data", async (req, res) => {
         FatherPhone, 
         school_Id, 
         school_code, 
-        Scholarno
+        Scholarno,
+        password,
+        AppliedClass,
+        AppliedStream,SectionName
       FROM Student_Master
     `);
 
@@ -331,7 +356,7 @@ app.delete("/delete-school/:school_Id", async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `All data for school_Id ${school_Id} has been deleted successfully`,
+      message: `All data for school_Id ${school_Id} has been deleted successfully from everywhere`,
     });
   } catch (error) {
     if (transaction) await transaction.rollback();
