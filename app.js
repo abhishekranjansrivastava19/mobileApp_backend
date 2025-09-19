@@ -9,11 +9,24 @@ const sql = require("mssql");
 const cors = require("cors");
 
 const app = express();
+const allowedOrigins = [
+  "http://localhost:5173",          // local dev
+  "http://webenlighten.dpserp.com"  // live frontend
+];
+
 app.use(cors({
-  origin: "*",   // your frontend URL
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 }));
+
 
 app.use(express.json());
 
