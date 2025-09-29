@@ -9,24 +9,20 @@ const sql = require("mssql");
 const cors = require("cors");
 
 const app = express();
-const allowedOrigins = [
-  "http://localhost:5173",          // local dev
-  "http://webenlighten.dpserp.com"  // live frontend
-];
+// const allowedOrigins = [
+//   // "http://localhost:5173", // local dev
+//   // "http://webenlighten.dpserp.com", // live frontend
+//   "*"
+// ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
-}));
-
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: false, // must be false if origin is "*"
+  })
+);
 
 app.use(express.json());
 
@@ -124,7 +120,6 @@ async function getPool() {
   return poolPromise;
 }
 
-
 // Convert everything → string (NVARCHAR)
 function toText(value) {
   if (value === undefined || value === null) return "";
@@ -146,7 +141,7 @@ app.get("/progress", (req, res) => {
 });
 
 function sendProgress(progress) {
-  clients.forEach((res) => res.write(`data: ${progress}\n\n`));
+  clients.forEach((res) => res.write(data: ${progress}\n\n));
 }
 
 app.post("/import-data", upload.single("file"), async (req, res) => {
@@ -184,7 +179,7 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
       const date = new Date(value);
       return isNaN(date) ? null : date; // returns null if invalid
     }
- const total = data.length;
+    const total = data.length;
     let inserted = 0;
 
     for (const row of data) {
@@ -254,7 +249,7 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
     res.status(201).json({
       success: true,
       inserted,
-      message: `Inserted ${inserted} student records`,
+      message: Inserted ${inserted} student records,
     });
   } catch (error) {
     if (transaction) await transaction.rollback();
@@ -278,7 +273,6 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
     });
   }
 });
-
 
 app.get("/download-import-data", async (req, res) => {
   try {
@@ -331,12 +325,13 @@ app.get("/download-import-data", async (req, res) => {
   }
 });
 
-
 app.delete("/delete-school/:school_Id", async (req, res) => {
   const { school_Id } = req.params;
 
   if (!school_Id) {
-    return res.status(400).json({ success: false, message: "school_Id is required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "school_Id is required" });
   }
 
   let transaction;
@@ -349,35 +344,155 @@ app.delete("/delete-school/:school_Id", async (req, res) => {
     const request = new sql.Request(transaction);
 
     // Example: delete from multiple tables where school_Id matches
-    await request.query(`DELETE FROM Student_Master WHERE school_Id = '${school_Id}'`);
-    await request.query(`DELETE FROM School_Master WHERE school_Id = '${school_Id}'`);
-    await request.query(`DELETE FROM Section_master WHERE school_Id = '${school_Id}'`);
-    await request.query(`DELETE FROM Admin_Notice WHERE school_Id = '${school_Id}'`);
-    await request.query(`DELETE FROM Allotment_Master WHERE school_Id = '${school_Id}'`);
-    await request.query(`DELETE FROM Assign_Master WHERE school_Id = '${school_Id}'`);
-    await request.query(`DELETE FROM Attendence_Master WHERE school_Id = '${school_Id}'`);
-    await request.query(`DELETE FROM Class_Master WHERE school_Id = '${school_Id}'`);
-    await request.query(`DELETE FROM Exam_Calender WHERE school_Id = '${school_Id}'`);
-    await request.query(`DELETE FROM Exam_type WHERE school_Id = '${school_Id}'`);
-    await request.query(`DELETE FROM Holiday_Calender WHERE school_Id = '${school_Id}'`);
-    await request.query(`DELETE FROM Marks_Master WHERE school_Id = '${school_Id}'`);
-    await request.query(`DELETE FROM Query_Master WHERE school_Id = '${school_Id}'`);
-    await request.query(`DELETE FROM Result_Publish WHERE school_Id = '${school_Id}'`);
+    await request.query(
+      DELETE FROM User_Login WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM Student_Master WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM School_Master WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM Section_master WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM Admin_Notice WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM Allotment_Master WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM Assign_Master WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM Attendence_Master WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM Class_Master WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM Exam_Calender WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM Exam_type WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM Holiday_Calender WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM Marks_Master WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM Query_Master WHERE school_Id = '${school_Id}'
+    );
+    await request.query(
+      DELETE FROM Result_Publish WHERE school_Id = '${school_Id}'
+    );
     // Add more tables as needed
-    
+
     await transaction.commit();
 
     res.status(200).json({
       success: true,
-      message: `All data for school_Id ${school_Id} has been deleted successfully from everywhere`,
+      message: All data for school_Id ${school_Id} has been deleted successfully from everywhere,
     });
   } catch (error) {
     if (transaction) await transaction.rollback();
     console.error("Error deleting school data:", error);
-    res.status(500).json({ success: false, message: "Error deleting school data", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Error deleting school data",
+      error: error.message,
+    });
   }
 });
 
+app.put("/update_student/:school_Id/:Scholarno", async (req, res) => {
+  const { school_Id, Scholarno } = req.params;
+  const { StudentName, password,  img } = req.body;
+
+  if (!school_Id || !Scholarno) {
+    return res.status(400).json({
+      success: false,
+      message: "school_Id and Scholarno are required",
+    });
+  }
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+
+    await request
+      .input("StudentName", sql.NVarChar, StudentName)
+      .input("school_Id", sql.NVarChar, school_Id)
+      .input("password", sql.NVarChar, password)
+      .input("Scholarno", sql.NVarChar, Scholarno)
+      .input("img", sql.NVarChar, img).query(`
+        UPDATE Student_Master
+        SET 
+          StudentName = @StudentName,
+          password = @password,
+          img = @img
+        WHERE school_Id = @school_Id AND Scholarno = @Scholarno
+      `);
+
+    res.status(200).json({
+      success: true,
+      message: "Student updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating student:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating student",
+      error: error.message,
+    });
+  }
+});
+
+app.put("/update_teacher/:school_Id/:id", async (req, res) => {
+  const { school_Id, id } = req.params;
+  const { username, password,  school_logo } = req.body;
+
+  if (!school_Id || !id) {
+    return res.status(400).json({
+      success: false,
+      message: "school_Id and id are required",
+    });
+  }
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+
+    await request
+      .input("username", sql.NVarChar, username)
+      .input("school_Id", sql.NVarChar, school_Id)
+      .input("password", sql.NVarChar, password)
+      .input("id", sql.NVarChar, id)
+      .input("school_logo", sql.NVarChar, school_logo).query(`
+        UPDATE User_Login
+        SET 
+          username = @username,
+          password = @password,
+          school_logo = @school_logo
+        WHERE school_Id = @school_Id AND id = @id
+      `);
+
+    res.status(200).json({
+      success: true,
+      message: "teacher updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating teacher:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating student",
+      error: error.message,
+    });
+  }
+});
 
 app.post("/api/v1/students", async (req, res) => {
   const {
