@@ -141,7 +141,7 @@ app.get("/progress", (req, res) => {
 });
 
 function sendProgress(progress) {
-  clients.forEach((res) => res.write(data: ${progress}\n\n));
+  clients.forEach((res) => res.write(`data: ${progress}\n\n`));
 }
 
 app.post("/import-data", upload.single("file"), async (req, res) => {
@@ -249,7 +249,7 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
     res.status(201).json({
       success: true,
       inserted,
-      message: Inserted ${inserted} student records,
+      message: `Inserted ${inserted} student records`,
     });
   } catch (error) {
     if (transaction) await transaction.rollback();
@@ -345,49 +345,49 @@ app.delete("/delete-school/:school_Id", async (req, res) => {
 
     // Example: delete from multiple tables where school_Id matches
     await request.query(
-      DELETE FROM User_Login WHERE school_Id = '${school_Id}'
+      `DELETE FROM User_Login WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM Student_Master WHERE school_Id = '${school_Id}'
+      `DELETE FROM Student_Master WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM School_Master WHERE school_Id = '${school_Id}'
+      `DELETE FROM School_Master WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM Section_master WHERE school_Id = '${school_Id}'
+      `DELETE FROM Section_master WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM Admin_Notice WHERE school_Id = '${school_Id}'
+      `DELETE FROM Admin_Notice WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM Allotment_Master WHERE school_Id = '${school_Id}'
+      `DELETE FROM Allotment_Master WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM Assign_Master WHERE school_Id = '${school_Id}'
+      `DELETE FROM Assign_Master WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM Attendence_Master WHERE school_Id = '${school_Id}'
+      `DELETE FROM Attendence_Master WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM Class_Master WHERE school_Id = '${school_Id}'
+      `DELETE FROM Class_Master WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM Exam_Calender WHERE school_Id = '${school_Id}'
+      `DELETE FROM Exam_Calender WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM Exam_type WHERE school_Id = '${school_Id}'
+      `DELETE FROM Exam_type WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM Holiday_Calender WHERE school_Id = '${school_Id}'
+      `DELETE FROM Holiday_Calender WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM Marks_Master WHERE school_Id = '${school_Id}'
+      `DELETE FROM Marks_Master WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM Query_Master WHERE school_Id = '${school_Id}'
+      `DELETE FROM Query_Master WHERE school_Id = '${school_Id}'`
     );
     await request.query(
-      DELETE FROM Result_Publish WHERE school_Id = '${school_Id}'
+      `DELETE FROM Result_Publish WHERE school_Id = '${school_Id}'`
     );
     // Add more tables as needed
 
@@ -395,7 +395,7 @@ app.delete("/delete-school/:school_Id", async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: All data for school_Id ${school_Id} has been deleted successfully from everywhere,
+      message: `All data for school_Id ${school_Id} has been deleted successfully from everywhere`,
     });
   } catch (error) {
     if (transaction) await transaction.rollback();
