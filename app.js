@@ -7,6 +7,7 @@ const XLSX = require("xlsx");
 // const sql = require("mssql/msnodesqlv8");
 const sql = require("mssql");
 const cors = require("cors");
+const cron = require("node-cron");
 
 const app = express();
 // const allowedOrigins = [
@@ -127,6 +128,20 @@ function toText(value) {
 }
 
 let clients = [];
+
+cron.schedule("0 0 * * *", async () => {
+  try {
+    const pool = await getPool();
+    const result = await pool.request().query(`
+      DELETE FROM [dbo].[Assign_Master]
+      WHERE DATEDIFF(DAY, created_date, GETDATE()) > 5
+    `);
+    console.log(`✅ Old assignments deleted. Rows affected: ${result.rowsAffected}`);
+  } catch (err) {
+    console.error("❌ Error deleting old assignments:", err);
+  }
+});
+
 
 app.get("/progress", (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
@@ -325,6 +340,113 @@ app.get("/download-import-data", async (req, res) => {
   }
 });
 
+app.get("/download-student-data/:school_code", async (req, res) => {
+  const { school_code } = req.params;
+  try {
+    const pool = await getPool();
+    const result = await pool.request().query(`
+      SELECT * FROM Student_Master WHERE school_code = '${school_code}'
+    `);
+
+    const students = result.recordset;
+    if (!students.length) return res.status(404).send("No student data found");
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(students);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+
+    const fileName = `StudentData_${Date.now()}.xlsx`;
+    const filePath = path.join(__dirname, "..", "uploads", fileName);
+    XLSX.writeFile(workbook, filePath);
+
+    res.download(filePath, fileName, (err) => {
+      if (err) return res.status(500).send("Error downloading file");
+      fs.unlink(filePath, (e) => e && console.error(e));
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error generating student Excel file");
+  }
+});
+
+app.get("/download-student-attendance/:school_code", async (req, res) => {
+  const { school_code } = req.params;
+  try {
+    const pool = await getPool();
+    const result = await pool.request().query(`
+      SELECT * FROM Attendence_Master WHERE school_code = '${school_code}'
+    `);
+
+    const students = result.recordset;
+    if (!students.length) return res.status(404).send("No student data found");
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(students);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+
+    const fileName = `StudentData_${Date.now()}.xlsx`;
+    const filePath = path.join(__dirname, "..", "uploads", fileName);
+    XLSX.writeFile(workbook, filePath);
+
+    res.download(filePath, fileName, (err) => {
+      if (err) return res.status(500).send("Error downloading file");
+      fs.unlink(filePath, (e) => e && console.error(e));
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error generating student Excel file");
+  }
+});
+
+app.get("/download-student-marks/:school_code", async (req, res) => {
+  const { school_code } = req.params;
+  try {
+    const pool = await getPool();
+    const result = await pool.request().query(`
+      SELECT * FROM Marks_Master WHERE school_code = '${school_code}'
+    `);
+
+    const students = result.recordset;
+    if (!students.length) return res.status(404).send("No student data found");
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(students);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+
+    const fileName = `StudentData_${Date.now()}.xlsx`;
+    const filePath = path.join(__dirname, "..", "uploads", fileName);
+    XLSX.writeFile(workbook, filePath);
+
+    res.download(filePath, fileName, (err) => {
+      if (err) return res.status(500).send("Error downloading file");
+      fs.unlink(filePath, (e) => e && console.error(e));
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error generating student Excel file");
+  }
+});
+
+app.delete("/delete-student-marks/:school_code", async (req, res) => {
+  const { school_code } = req.params;
+
+  try {
+    const pool = await getPool();
+    const result = await pool
+      .request()
+      .query(`DELETE FROM Marks_Master WHERE school_code = '${school_code}'`);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).send("No marks found for the given school code");
+    }
+
+    res.status(200).send("Student marks deleted successfully");
+  } catch (error) {
+    console.error("Error deleting student marks:", error);
+    res.status(500).send("Error deleting student marks");
+  }
+});
+
 app.delete("/delete-school/:school_Id", async (req, res) => {
   const { school_Id } = req.params;
 
@@ -410,7 +532,7 @@ app.delete("/delete-school/:school_Id", async (req, res) => {
 
 app.put("/update_student/:school_Id/:Scholarno", async (req, res) => {
   const { school_Id, Scholarno } = req.params;
-  const { StudentName, password,  img } = req.body;
+  const { StudentName, password, img } = req.body;
 
   if (!school_Id || !Scholarno) {
     return res.status(400).json({
@@ -453,7 +575,7 @@ app.put("/update_student/:school_Id/:Scholarno", async (req, res) => {
 
 app.put("/update_teacher/:school_Id/:id", async (req, res) => {
   const { school_Id, id } = req.params;
-  const { username, password,  school_logo } = req.body;
+  const { username, password, school_logo } = req.body;
 
   if (!school_Id || !id) {
     return res.status(400).json({
