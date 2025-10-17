@@ -10,11 +10,7 @@ const cors = require("cors");
 const cron = require("node-cron");
 
 const app = express();
-// const allowedOrigins = [
-//   // "http://localhost:5173", // local dev
-//   // "http://webenlighten.dpserp.com", // live frontend
-//   "*"
-// ];
+
 
 app.use(
   cors({
@@ -29,14 +25,7 @@ app.use(express.json());
 
 // Configure SQL Server connection
 const sqlConfig = {
-  // server: "HS-211-55211\\SQLEXPRESS", // Use 'server' instead of 'host' for mssql
-  // database: "Enlighten_App",
-  // user: "HS-211-55211\\sysadminhs",
-  // options: {
-  //   trustedConnection: true,
-  //   encrypt: true,
-  //   trustServerCertificate: true  // Needed for local development
-  // },
+ 
   user: "sa",
   password: "DPSTECH@123",
   server: "168.220.237.211", // SQL Server address
