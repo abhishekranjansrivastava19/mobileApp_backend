@@ -133,8 +133,8 @@ cron.schedule("0 0 * * *", async () => {
   try {
     const pool = await getPool();
     const result = await pool.request().query(`
-      DELETE FROM [dbo].[Assign_Master]
-      WHERE DATEDIFF(DAY, created_date, GETDATE()) > 5
+      DELETE FROM [Assign_Master]
+      WHERE DATEDIFF(DAY, created_date, GETDATE()) > 7
     `);
     console.log(`✅ Old assignments deleted. Rows affected: ${result.rowsAffected}`);
   } catch (err) {
@@ -189,11 +189,34 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
     await transaction.begin();
     const request = new sql.Request(transaction);
 
-    function parseDate(value) {
-      if (!value) return null;
-      const date = new Date(value);
-      return isNaN(date) ? null : date; // returns null if invalid
+   // ✅ Improved Date Parser
+   function parseDate(value) {
+  if (!value) return null;
+
+  // Excel serial number case
+  if (typeof value === "number") {
+    const excelEpoch = new Date(1900, 0, 1);
+    const date = new Date(excelEpoch.getTime() + (value - 2) * 86400000);
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate()); // strip timezone
+  }
+
+  // String case (DD/MM/YYYY or DD-MM-YYYY)
+  if (typeof value === "string") {
+    const parts = value.split(/[\/\-]/);
+    if (parts.length === 3) {
+      const [d, m, y] = parts.map(Number);
+      if (y && m && d) {
+        return new Date(y, m - 1, d); // creates a local date (no UTC shift)
+      }
     }
+  }
+
+  // Default fallback
+  const date = new Date(value);
+  return isNaN(date) ? null : new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+
     const total = data.length;
     let inserted = 0;
 
@@ -510,6 +533,19 @@ app.delete("/delete-school/:school_Id", async (req, res) => {
     );
     await request.query(
       `DELETE FROM Result_Publish WHERE school_Id = '${school_Id}'`
+    );
+
+     await request.query(
+      `DELETE FROM Subject_Master WHERE school_Id = '${school_Id}'`
+    );
+     await request.query(
+      `DELETE FROM Teacher_Master WHERE school_Id = '${school_Id}'`
+    );
+     await request.query(
+      `DELETE FROM Teacher_Notice WHERE school_Id = '${school_Id}'`
+    );
+     await request.query(
+      `DELETE FROM Submit_Assign_Master WHERE school_Id = '${school_Id}'`
     );
     // Add more tables as needed
 
