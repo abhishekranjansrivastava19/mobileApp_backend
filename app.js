@@ -136,12 +136,13 @@ cron.schedule("0 0 * * *", async () => {
       DELETE FROM [Assign_Master]
       WHERE DATEDIFF(DAY, created_date, GETDATE()) > 7
     `);
-    console.log(`✅ Old assignments deleted. Rows affected: ${result.rowsAffected}`);
+    console.log(
+      `✅ Old assignments deleted. Rows affected: ${result.rowsAffected}`
+    );
   } catch (err) {
     console.error("❌ Error deleting old assignments:", err);
   }
 });
-
 
 app.get("/progress", (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
@@ -189,33 +190,34 @@ app.post("/import-data", upload.single("file"), async (req, res) => {
     await transaction.begin();
     const request = new sql.Request(transaction);
 
-   // ✅ Improved Date Parser
-   function parseDate(value) {
-  if (!value) return null;
+    // ✅ Improved Date Parser
+    function parseDate(value) {
+      if (!value) return null;
 
-  // Excel serial number case
-  if (typeof value === "number") {
-    const excelEpoch = new Date(1900, 0, 1);
-    const date = new Date(excelEpoch.getTime() + (value - 2) * 86400000);
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate()); // strip timezone
-  }
-
-  // String case (DD/MM/YYYY or DD-MM-YYYY)
-  if (typeof value === "string") {
-    const parts = value.split(/[\/\-]/);
-    if (parts.length === 3) {
-      const [d, m, y] = parts.map(Number);
-      if (y && m && d) {
-        return new Date(y, m - 1, d); // creates a local date (no UTC shift)
+      // Excel serial number case
+      if (typeof value === "number") {
+        const excelEpoch = new Date(1900, 0, 1);
+        const date = new Date(excelEpoch.getTime() + (value - 2) * 86400000);
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate()); // strip timezone
       }
+
+      // String case (DD/MM/YYYY or DD-MM-YYYY)
+      if (typeof value === "string") {
+        const parts = value.split(/[\/\-]/);
+        if (parts.length === 3) {
+          const [d, m, y] = parts.map(Number);
+          if (y && m && d) {
+            return new Date(y, m - 1, d); // creates a local date (no UTC shift)
+          }
+        }
+      }
+
+      // Default fallback
+      const date = new Date(value);
+      return isNaN(date)
+        ? null
+        : new Date(date.getFullYear(), date.getMonth(), date.getDate());
     }
-  }
-
-  // Default fallback
-  const date = new Date(value);
-  return isNaN(date) ? null : new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
 
     const total = data.length;
     let inserted = 0;
@@ -535,16 +537,16 @@ app.delete("/delete-school/:school_Id", async (req, res) => {
       `DELETE FROM Result_Publish WHERE school_Id = '${school_Id}'`
     );
 
-     await request.query(
+    await request.query(
       `DELETE FROM Subject_Master WHERE school_Id = '${school_Id}'`
     );
-     await request.query(
+    await request.query(
       `DELETE FROM Teacher_Master WHERE school_Id = '${school_Id}'`
     );
-     await request.query(
+    await request.query(
       `DELETE FROM Teacher_Notice WHERE school_Id = '${school_Id}'`
     );
-     await request.query(
+    await request.query(
       `DELETE FROM Submit_Assign_Master WHERE school_Id = '${school_Id}'`
     );
     // Add more tables as needed
@@ -561,6 +563,235 @@ app.delete("/delete-school/:school_Id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error deleting school data",
+      error: error.message,
+    });
+  }
+});
+
+app.delete("/delete-teacher/:school_code/:teacher_Id", async (req, res) => {
+  const { school_code, teacher_Id } = req.params;
+
+  if (!school_code || !teacher_Id) {
+    return res.status(400).json({
+      success: false,
+      message: "school_code and teacher_Id are required",
+    });
+  }
+
+  let transaction;
+
+  try {
+    const pool = await getPool();
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+
+    const request = new sql.Request(transaction);
+
+    // -------------------------------
+    // 1️⃣ DELETE from User_Login
+    // userId == teacher_Id
+    // -------------------------------
+    await request
+      .input("school_code", sql.VarChar, school_code)
+      .input("teacher_Id", sql.VarChar, teacher_Id).query(`
+        DELETE FROM User_Login
+        WHERE school_code = @school_code
+        AND userId = @teacher_Id
+      `);
+
+    // -------------------------------
+    // 2️⃣ DELETE from Teacher_Master
+    // teacher_Id column exists here
+    // -------------------------------
+    await request.query(`
+      DELETE FROM Teacher_Master
+      WHERE school_code = @school_code
+      AND teacher_Id = @teacher_Id
+    `);
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Teacher deleted from Teacher_Master and User_Login successfully",
+    });
+  } catch (error) {
+    if (transaction) await transaction.rollback();
+
+    return res.status(500).json({
+      success: false,
+      message: "Error deleting teacher",
+      error: error.message,
+    });
+  }
+});
+
+// app.put("/update-teacher/:school_code/:teacher_Id", async (req, res) => {
+//   const { school_code, teacher_Id } = req.params;
+//   const {
+//     teacher_name,
+//     gender,
+//     mobile,
+//     address,
+//     class_name,
+//     section_name
+//   } = req.body;
+
+//   if (!school_code || !teacher_Id) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "school_code and teacher_Id are required",
+//     });
+//   }
+
+//   let transaction;
+
+//   try {
+//     const pool = await getPool();
+//     transaction = new sql.Transaction(pool);
+//     await transaction.begin();
+
+//     const request = new sql.Request(transaction);
+
+//     // 1️⃣ UPDATE User_Login TABLE
+//     await request
+//       .input("school_code", sql.VarChar, school_code)
+//       .input("teacher_Id", sql.VarChar, teacher_Id)
+//       .input("mobile", sql.VarChar, mobile)
+//       .query(`
+//         UPDATE User_Login
+//         SET username = @mobile
+//         WHERE school_code = @school_code
+//         AND userId = @teacher_Id
+//       `);
+
+//     // 2️⃣ UPDATE Teacher_Master TABLE
+//     await request
+//       .input("teacher_name", sql.VarChar, teacher_name)
+//       .input("gender", sql.VarChar, gender)
+//       .input("mobile", sql.VarChar, mobile)
+//       .input("address", sql.VarChar, address)
+//       .input("class_name", sql.VarChar, class_name)
+//       .input("section_name", sql.VarChar, section_name)
+//       .input("school_code", sql.VarChar, school_code)
+//       .input("teacher_Id", sql.VarChar, teacher_Id)
+//       .query(`
+//         UPDATE Teacher_Master
+//         SET
+//           teacher_name = @teacher_name,
+//           gender = @gender,
+//           mobile = @mobile,
+//           address = @address,
+//           class_name = @class_name,
+//           section_name = @section_name
+//         WHERE school_code = @school_code
+//         AND teacher_Id = @teacher_Id
+//       `);
+
+//     await transaction.commit();
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Teacher updated successfully in both tables",
+//     });
+
+//   } catch (error) {
+//     if (transaction) await transaction.rollback();
+
+//     return res.status(500).json({
+//       success: false,
+//       message: "Error updating teacher",
+//       error: error.message,
+//     });
+//   }
+// });
+
+app.put("/update-teacher/:school_code/:teacher_Id", async (req, res) => {
+  const { school_code, teacher_Id } = req.params;
+  const {
+    teacher_name,
+    gender,
+    mobile,
+    address,
+    class_name,
+    class_id,
+    section_name,
+    section_id,
+  } = req.body;
+
+  if (!school_code || !teacher_Id) {
+    return res.status(400).json({
+      success: false,
+      message: "school_code and teacher_Id are required",
+    });
+  }
+
+  let transaction;
+
+  try {
+    const pool = await getPool();
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+
+    // ----------------------------------------
+    // 1️⃣ UPDATE User_Login (use new Request)
+    // ----------------------------------------
+    const request1 = new sql.Request(transaction);
+
+    await request1
+      .input("school_code", sql.VarChar, school_code)
+      .input("teacher_Id", sql.VarChar, teacher_Id)
+      .input("mobile", sql.VarChar, mobile).query(`
+        UPDATE User_Login
+        SET username = @mobile
+        WHERE school_code = @school_code
+        AND userId = @teacher_Id
+      `);
+
+    // ----------------------------------------
+    // 2️⃣ UPDATE Teacher_Master (new Request)
+    // ----------------------------------------
+    const request2 = new sql.Request(transaction);
+
+    await request2
+      .input("teacher_name", sql.VarChar, teacher_name)
+      .input("gender", sql.VarChar, gender)
+      .input("mobile2", sql.VarChar, mobile)
+      .input("address", sql.VarChar, address)
+      .input("class_name", sql.VarChar, class_name)
+      .input("class_id", sql.VarChar, class_id)
+      .input("section_name", sql.VarChar, section_name)
+      .input("section_id", sql.VarChar, section_id)
+      .input("school_code", sql.VarChar, school_code)
+      .input("teacher_Id", sql.VarChar, teacher_Id).query(`
+        UPDATE Teacher_Master
+        SET 
+          teacher_name = @teacher_name,
+          gender = @gender,
+          mobile = @mobile2,
+          address = @address,
+          class_name = @class_name,
+          class_id=@class_id,
+          section_name = @section_name,
+          section_id=@section_id
+
+        WHERE school_code = @school_code
+        AND teacher_Id = @teacher_Id
+      `);
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Teacher updated successfully in both tables",
+    });
+  } catch (error) {
+    if (transaction) await transaction.rollback();
+
+    return res.status(500).json({
+      success: false,
+      message: "Error updating teacher",
       error: error.message,
     });
   }
