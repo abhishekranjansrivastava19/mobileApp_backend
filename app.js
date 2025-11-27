@@ -609,12 +609,18 @@ app.delete("/delete-teacher/:school_code/:teacher_Id", async (req, res) => {
       AND teacher_Id = @teacher_Id
     `);
 
+    await request.query(`
+      DELETE FROM Allotment_Master
+      WHERE school_code = @school_code
+      AND teachers_id = @teacher_Id
+    `);
+
     await transaction.commit();
 
     return res.status(200).json({
       success: true,
       message:
-        "Teacher deleted from Teacher_Master and User_Login successfully",
+        "Teacher deleted from Teacher_Master, User_Login And Allotment_Master successfully",
     });
   } catch (error) {
     if (transaction) await transaction.rollback();
@@ -780,11 +786,25 @@ app.put("/update-teacher/:school_code/:teacher_Id", async (req, res) => {
         AND teacher_Id = @teacher_Id
       `);
 
+    const request3 = new sql.Request(transaction);
+
+    await request3
+      .input("teacher_name", sql.VarChar, teacher_name)
+      .input("school_code", sql.VarChar, school_code)
+      .input("teacher_Id", sql.VarChar, teacher_Id).query(`
+        UPDATE Allotment_Master
+        SET 
+          teachers = @teacher_name
+        WHERE school_code = @school_code
+        AND teachers_id = @teacher_Id
+      `);
+
     await transaction.commit();
 
     return res.status(200).json({
       success: true,
-      message: "Teacher updated successfully in both tables",
+      message:
+        "Teacher updated successfully in Teacher_Master, User_Login And Allotment_Master tables",
     });
   } catch (error) {
     if (transaction) await transaction.rollback();
@@ -1287,6 +1307,90 @@ app.delete("/api/v1/themes/:school_code", async (req, res) => {
     }
   } catch (err) {
     res.status(500).send(err.message);
+  }
+});
+
+
+// GET Teacher + Login details by School Code (double join)
+app.get("/getBySchoolCode/:school_code", async (req, res) => {
+  const { school_code } = req.params;
+
+  try {
+    // const pool = await sql.connect(dbConfig);
+    const pool = await getPool();
+
+    const result = await pool.request()
+      .input("school_code", sql.VarChar, school_code)
+      .query(`
+        SELECT 
+          TM.teacher_name,
+          TM.gender,
+          TM.mobile,
+          TM.school_Id,
+          UL.username,
+          UL.password,
+          UL.id,
+          UL.type,
+          UL.school_name
+         
+        FROM Teacher_Master TM      
+        INNER JOIN User_Login UL   
+          ON TM.mobile = UL.username
+        WHERE TM.school_code = @school_code
+      `);
+
+    res.status(200).json({
+      success: true,
+      count: result.recordset.length,
+      data: result.recordset,
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+});
+
+
+
+app.get("/getAllAdminSchools", async (req, res) => {
+  try {
+    // const pool = await sql.connect(dbConfig);
+
+    const pool = await getPool();
+
+    const result = await pool.request().query(`
+      SELECT 
+        userId,
+        username,
+        password,
+        type,
+        school_code,
+        school_Id,
+        created_date,
+        id,
+        school_name
+      FROM User_Login
+      WHERE type = 'ADMIN'
+    `);
+
+    res.status(200).json({
+      success: true,
+      count: result.recordset.length,
+      data: result.recordset
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
   }
 });
 
