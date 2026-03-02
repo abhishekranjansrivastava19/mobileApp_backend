@@ -817,6 +817,54 @@ app.put("/update-teacher/:school_code/:teacher_Id", async (req, res) => {
   }
 });
 
+//To Update the ExamType name for admin panel
+app.put(`/update_examtype/:id`, async (req, res) => {
+  const { id } = req.params;
+  const { prevexamName, examName, school_code, school_Id} = req.body;
+
+  if(!id) {
+    return res.status(400).json({
+      success: false,
+      message: "id are required",
+    });
+  }
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    await request
+    .input("Id",sql.Int, id)
+    .input("ExamName", sql.NVarChar(100), examName)
+    .input("PrevExamName", sql.NVarChar(100), prevexamName)
+    .input("School_code", sql.NVarChar(50), school_code)
+    .input("School_id", sql.NVarChar(50), school_Id)
+    .query(`
+      UPDATE Exam_type
+      SET ExamName = @ExamName
+      WHERE Id = @Id AND School_code = @School_code AND School_id = @School_id;
+
+      UPDATE Exam_Calender
+      SET exam_type = @ExamName
+      WHERE exam_type = @PrevExamName AND school_code = @School_code AND school_Id = @School_id;
+
+      UPDATE Marks_Master
+      SET exam_Type = @ExamName
+      WHERE exam_Type = @PrevExamName AND school_code = @School_code AND school_Id = @School_id;
+      `)
+    res.status(200).json({
+        success: true,
+        message: "Exam Type Name updated successfully",
+      });
+  } catch (error) {
+    console.error("Error updating Exam Type Name:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating Exam Type Name",
+      error: error.message,
+    });
+  }
+})
+
 app.put("/update_student/:school_Id/:Scholarno", async (req, res) => {
   const { school_Id, Scholarno } = req.params;
   const { StudentName, password, img } = req.body;
