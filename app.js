@@ -951,6 +951,48 @@ app.put("/update_teacher/:school_Id/:id", async (req, res) => {
   }
 });
 
+//To Delete Student Permanently for admin panel
+app.delete(`/delete_student/:scholarno/:school_code/:school_id/:student_name/:student_class/:student_section`, async (req, res) => {
+  const { scholarno, school_code, school_id, student_name, student_class, student_section } = req.params;
+
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    await request
+    .input("ScholarNo",sql.NVarChar(50), scholarno)
+    .input("School_code", sql.NVarChar(50), school_code)
+    .input("School_id", sql.NVarChar(50), school_id)
+    .input("StudentName", sql.NVarChar(150), student_name)
+    .input("Class", sql.NVarChar(150), student_class)
+    .input("Section", sql.NVarChar(150), student_section)
+    
+    .query(`
+      DELETE FROM Student_Master
+      WHERE school_code = @School_code AND school_Id = @School_id AND Scholarno = @ScholarNo AND StudentName = @StudentName AND AppliedClass = @Class AND SectionName = @Section ;
+
+      DELETE FROM Marks_Master
+      WHERE school_code = @School_code AND school_Id = @School_id AND student_addmission_no = @ScholarNo AND student_name = @StudentName AND class_name = @Class AND section = @Section;
+
+      DELETE FROM Submit_Assign_Master
+      WHERE school_code = @School_code AND school_Id = @School_id AND student_Id = @ScholarNo AND class_name = @Class AND section = @Section;
+
+      DELETE FROM Query_Master
+      WHERE school_code = @School_code AND school_Id = @School_id AND class_name = @Class AND section = @Section AND sent_by_student = @StudentName;
+      `)
+    res.status(200).json({
+        success: true,
+        message: "Student Deleted successfully",
+      });
+  } catch (error) {
+    console.error("Error Deleting Student Data:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error Deleting Student",
+      error: error.message,
+    });
+  }
+})
+
 app.post("/api/v1/students", async (req, res) => {
   const {
     school_Id,
