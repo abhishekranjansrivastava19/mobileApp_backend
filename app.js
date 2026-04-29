@@ -1214,7 +1214,6 @@ app.put("/api/v1/updatestu", async (req, res) => {
     FatherAddress,
   } = req.body;
 
-  console.log(req.body);
   // Validate required fields
   if (!school_Id || !StudentName || !Sex || !AppliedClass || !SectionName) {
     return res.status(400).json({
@@ -1524,7 +1523,36 @@ app.get("/getBySchoolCode/:school_code", async (req, res) => {
   }
 });
 
+// GET Teacher + Login details by School Code (double join)
+app.get("/getcurrentDateAttendance/:school_code/:school_id/:date", async (req, res) => {
+  const { school_code , school_id, date} = req.params;
 
+  try {
+    // const pool = await sql.connect(dbConfig);
+    const pool = await getPool();
+
+    const result = await pool.request()
+      .input("school_code", sql.VarChar, school_code)
+      .input("school_Id", sql.VarChar, school_id)
+      .input("Date", sql.Date, date)
+      .query(`
+        SELECT 
+          * FROM Attendence_Master
+        WHERE school_code = @school_code AND school_Id = @school_Id AND CAST(created_date as DATE) = @Date
+      `);
+
+      res.status(200).json({
+        success: true,
+        data: result.recordset,
+      });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+});
 
 app.get("/getAllAdminSchools", async (req, res) => {
   try {
