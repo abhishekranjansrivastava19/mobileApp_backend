@@ -144,6 +144,22 @@ cron.schedule("0 0 * * *", async () => {
   }
 });
 
+
+// // To Sync Students Attendance Data from AttendanceLogs to Attendence_Master 
+// cron.schedule("0 3 * * *", async () => {
+//   try {
+//     const pool = await getPool();
+
+//     const result = await pool.request().execute("sp_SyncAttendance");
+
+//     console.log("✅ Attendance sync completed");
+//     console.log("Rows affected:", result.rowsAffected);
+
+//   } catch (err) {
+//     console.error("❌ Error running attendance sync:", err);
+//   }
+// });
+
 app.get("/progress", (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -951,6 +967,69 @@ app.put("/update_teacher/:school_Id/:id", async (req, res) => {
   }
 });
 
+// //To Sync Attendance Data from AttendanceLog  for admin panel
+// app.get("/sync_attendance/:school_id/:school_code", async (req, res) => {
+//   const { school_id, school_code } = req.params;
+
+//   try {
+//     const pool = await getPool();
+//     const dbRequest  = pool.request();
+
+//     const result = await dbRequest 
+//       .input("school_id", sql.VarChar(50), school_id)
+//       .input("school_code", sql.VarChar(50), school_code)
+     
+//       .query(`
+//         select * from AttendanceLogs
+//         WHERE school_id = @school_id AND school_code = @school_code
+//       `);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Got Attendance Log Data successfully",
+//       data: result.recordset,
+//     });
+//   } catch (error) {
+//     console.error("Error Getting Attendance Log Data of students:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Error getting attendance log data",
+//       error: error.message,
+//     });
+//   }
+// });
+
+// app.get("/sync_attendance/datewise/:school_id/:school_code/:date", async (req, res) => {
+//   const { school_id, school_code, date } = req.params;
+
+//   try {
+//     const pool = await getPool();
+//     const request = pool.request();
+
+//     const result = await request
+//       .input("school_id", sql.VarChar(50), school_id)
+//       .input("school_code", sql.VarChar(50), school_code)
+//       .input("date", sql.Date, date)
+//       .query(`
+//         select * from AttendanceLogs
+//         WHERE school_id = @school_id AND school_code = @school_code AND CAST(AttendanceDate AS DATE) = @date
+//       `);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Got Attendance Log Data successfully",
+//       data: result.recordset,
+//     });
+//   } catch (error) {
+//     console.error("Error Getting Attendance Log Data of students:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Error getting attendance log data",
+//       error: error.message,
+//     });
+//   }
+// });
+
 //To Delete Student Permanently for admin panel
 app.delete(`/delete_student/:scholarno/:school_code/:school_id/:student_name/:student_class/:student_section`, async (req, res) => {
   const { scholarno, school_code, school_id, student_name, student_class, student_section } = req.params;
@@ -1135,7 +1214,6 @@ app.put("/api/v1/updatestu", async (req, res) => {
     FatherAddress,
   } = req.body;
 
-  console.log(req.body);
   // Validate required fields
   if (!school_Id || !StudentName || !Sex || !AppliedClass || !SectionName) {
     return res.status(400).json({
@@ -1445,7 +1523,36 @@ app.get("/getBySchoolCode/:school_code", async (req, res) => {
   }
 });
 
+// GET Teacher + Login details by School Code (double join)
+app.get("/getcurrentDateAttendance/:school_code/:school_id/:date", async (req, res) => {
+  const { school_code , school_id, date} = req.params;
 
+  try {
+    // const pool = await sql.connect(dbConfig);
+    const pool = await getPool();
+
+    const result = await pool.request()
+      .input("school_code", sql.VarChar, school_code)
+      .input("school_Id", sql.VarChar, school_id)
+      .input("Date", sql.Date, date)
+      .query(`
+        SELECT 
+          * FROM Attendence_Master
+        WHERE school_code = @school_code AND school_Id = @school_Id AND CAST(created_date as DATE) = @Date
+      `);
+
+      res.status(200).json({
+        success: true,
+        data: result.recordset,
+      });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+});
 
 app.get("/getAllAdminSchools", async (req, res) => {
   try {
