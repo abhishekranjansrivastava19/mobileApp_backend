@@ -26,6 +26,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Configure SQL Server connection
 const sqlConfig = {
@@ -1587,6 +1588,294 @@ app.get("/getAllAdminSchools", async (req, res) => {
       success: false,
       message: "Server Error",
       error: error.message
+    });
+  }
+});
+
+// POST New Class
+app.post("/class", async (req, res) => {
+  const {
+    class_Id,
+    class_name,
+    school_Id,
+    school_code,
+    created_date,
+    serial_no
+  } = req.body;
+
+  const pool = await getPool();
+  const transaction = new sql.Transaction(pool);
+
+  try {
+    await transaction.begin();
+
+    // -----------------------------
+    // STEP 1: CHECK DUPLICATE SERIAL NO
+    // -----------------------------
+    const checkRequest = new sql.Request(transaction);
+
+    const serialCheck = await checkRequest
+      .input("serial_no", sql.Int, serial_no)
+      .input("school_Id", sql.NVarChar(50), school_Id)
+      .input("school_code", sql.NVarChar(50), school_code)
+      .query(`
+        SELECT 1 
+        FROM Class_Master WITH (UPDLOCK, HOLDLOCK)
+        WHERE serial_no = @serial_no
+          AND school_Id = @school_Id
+          AND school_code = @school_code
+      `);
+
+    if (serialCheck.recordset.length > 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "This serial number already exists for the school",
+      });
+    }
+
+    // -----------------------------
+    // STEP 2: CHECK DUPLICATE CLASS NAME
+    // -----------------------------
+    const nameCheck = await new sql.Request(transaction)
+      .input("class_name", sql.NVarChar(50), class_name)
+      .input("school_Id", sql.NVarChar(50), school_Id)
+      .input("school_code", sql.NVarChar(50), school_code)
+      .query(`
+        SELECT 1 
+        FROM Class_Master WITH (UPDLOCK, HOLDLOCK)
+        WHERE class_name = @class_name
+          AND school_Id = @school_Id
+          AND school_code = @school_code
+      `);
+
+    if (nameCheck.recordset.length > 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "This class name already exists for the school",
+      });
+    }
+
+    // -----------------------------
+    // STEP 3: INSERT CLASS
+    // -----------------------------
+    await new sql.Request(transaction)
+      .input("class_Id", sql.NVarChar(50), class_Id)
+      .input("class_name", sql.NVarChar(50), class_name)
+      .input("school_Id", sql.NVarChar(50), school_Id)
+      .input("school_code", sql.NVarChar(50), school_code)
+      .input("created_date", sql.DateTime, created_date)
+      .input("serial_no", sql.Int, serial_no)
+      .query(`
+        INSERT INTO Class_Master 
+        (class_Id, class_name, school_Id, school_code, serial_no, created_date)
+        VALUES (@class_Id, @class_name, @school_Id, @school_code, @serial_no, @created_date)
+      `);
+
+    await transaction.commit();
+
+    return res.status(201).json({
+      success: true,
+      message: "Class Inserted successfully."
+    });
+
+  } catch (err) {
+    console.error("INSERT ERROR:", err);
+
+    try {
+      await transaction.rollback();
+    } catch (rollbackError) {
+      console.error("Rollback failed:", rollbackError.message);
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
+// GET All Class By School_Id AND School_code
+app.get("/fetchallclasss/:school_code/:school_id", async (req, res) => {
+  const { school_code, school_id } = req.params;
+  try {
+    const pool = await getPool();
+
+    const result = await pool.request()
+      .input("school_code", sql.NVarChar(50), school_code)
+      .input("school_Id", sql.NVarChar(50), school_id)
+      .query(`
+        SELECT class_Id, class_name, school_Id, school_code, id, serial_no
+        FROM Class_Master
+        WHERE school_code = @school_code AND school_Id = @school_Id
+      `);
+
+    res.status(200).json({
+      success: true,
+      count: result.recordset.length,
+      data: result.recordset,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+});
+
+//To Update the ExamType name for admin panel
+app.put("/update_class/:id", async (req, res) => {
+  const { id } = req.params;
+  const {
+    class_Id,
+    class_name,
+    serial_no,
+    created_date,
+    school_Id,
+    school_code
+  } = req.body;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "id is required",
+    });
+  }
+
+  const pool = await getPool();
+  const transaction = new sql.Transaction(pool);
+
+  try {
+    await transaction.begin();
+
+    // -----------------------------
+    // STEP 1: CHECK DUPLICATE SERIAL NO
+    // -----------------------------
+    const checkRequest = new sql.Request(transaction);
+
+    const check = await checkRequest
+      .input("serial_no", sql.Int, serial_no)
+      .input("school_Id", sql.NVarChar(50), school_Id)
+      .input("school_code", sql.NVarChar(50), school_code)
+      .input("Id", sql.Int, id)
+      .query(`
+        SELECT 1 
+        FROM Class_Master WITH (UPDLOCK, HOLDLOCK)
+        WHERE serial_no = @serial_no
+          AND school_Id = @school_Id
+          AND school_code = @school_code
+          AND id != @Id
+      `);
+
+    if (check.recordset.length > 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "This Serial number already exists for the school",
+      });
+    }
+
+    // -----------------------------
+    // STEP 2: UPDATE CLASS
+    // -----------------------------
+    const updateRequest = new sql.Request(transaction);
+
+    const result = await updateRequest
+      .input("class_Id", sql.NVarChar(50), class_Id)
+      .input("class_name", sql.NVarChar(50), class_name)
+      .input("serial_no", sql.Int, serial_no)
+      .input("Id", sql.Int, id)
+      .input("created_date",sql.DateTime,created_date)
+      .input("school_Id", sql.NVarChar(50), school_Id)
+      .input("school_code", sql.NVarChar(50), school_code)
+      .query(`
+        UPDATE Class_Master
+        SET class_Id = @class_Id,
+            class_name = @class_name,
+            serial_no = @serial_no,
+            created_date = @created_date
+        WHERE id = @Id
+          AND school_Id = @school_Id
+          AND school_code = @school_code
+      `);
+
+    // -----------------------------
+    // STEP 3: CHECK IF ROW UPDATED
+    // -----------------------------
+    if (result.rowsAffected[0] === 0) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Class not found or no changes made",
+      });
+    }
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Class updated successfully",
+    });
+
+  } catch (error) {
+    console.error("UPDATE ERROR:", error);
+
+    try {
+      await transaction.rollback();
+    } catch (rollbackError) {
+      console.error("Rollback failed:", rollbackError.message);
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while updating class",
+      error: error.message,
+    });
+  }
+});
+
+app.delete("/delete_class/:id/:school_id/:school_code", async (req, res) => {
+  const { id , school_id, school_code } = req.params;
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "id is required",
+    });
+  }
+  try {
+    const pool = await getPool();
+
+    const result = await pool.request()
+      .input("school_code", sql.NVarChar(50), school_code)
+      .input("school_Id", sql.NVarChar(50), school_id)
+      .input("id", sql.Int, id)
+      .query(`
+        DELETE FROM Class_Master
+        WHERE school_code = @school_code AND school_Id = @school_Id AND id = @id
+      `);
+
+      if (result.rowsAffected[0] === 0) {
+        return res.status(200).json({
+          success: false,
+          message: "Class not found or already deleted",
+        });
+      }
+
+    res.status(200).json({
+      success: true,
+      message: "Class deleted successfully",
+      deletedCount: result.rowsAffected[0],
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
     });
   }
 });
