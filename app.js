@@ -47,6 +47,7 @@ const sqlConfig = {
     enableArithAbort: true,
     multipleActiveResultSets: true,
   },
+  requestTimeout: 300000,
 };
 
 const dbConfig = {
@@ -59,6 +60,7 @@ const dbConfig = {
     enableArithAbort: true,
     multipleActiveResultSets: true,
   },
+  requestTimeout: 300000,
 };
 
 sql
@@ -1869,6 +1871,257 @@ app.delete("/delete_class/:id/:school_id/:school_code", async (req, res) => {
       success: true,
       message: "Class deleted successfully",
       deletedCount: result.rowsAffected[0],
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+});
+
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error("Only image files are allowed!"), false);
+    }
+
+    cb(null, true);
+  },
+
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+  },
+});
+//POST API
+app.post(
+  "/banner",
+  imageUpload.fields([
+    { name: "img_1", maxCount: 1 },
+    { name: "img_2", maxCount: 1 },
+    { name: "img_3", maxCount: 1 },
+    { name: "img_4", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const { school_Id, school_code } = req.body;
+
+      const convertToBase64 = (file) => {
+        if (!file) return null;
+
+        return (
+          file.buffer.toString("base64")
+        );
+      };
+
+      const img_1 = req.files?.img_1
+        ? convertToBase64(req.files.img_1[0])
+        : null;
+
+      const img_2 = req.files?.img_2
+        ? convertToBase64(req.files.img_2[0])
+        : null;
+
+      const img_3 = req.files?.img_3
+        ? convertToBase64(req.files.img_3[0])
+        : null;
+
+      const img_4 = req.files?.img_4
+        ? convertToBase64(req.files.img_4[0])
+        : null;
+
+      const pool = await sql.connect(sqlConfig);
+
+      // CHECK IF RECORD ALREADY EXISTS
+      const existingRecord = await pool
+        .request()
+        .input("school_Id", sql.NVarChar(50), school_Id)
+        .input("school_code", sql.NVarChar(50), school_code)
+        .query(`
+          SELECT id
+          FROM SchoolBanner_Master
+          WHERE school_Id = @school_Id
+          AND school_code = @school_code
+        `);
+
+      if (existingRecord.recordset.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Banner already exists for this school_Id and school_code",
+        });
+      }
+
+      // INSERT NEW RECORD
+      await pool
+        .request()
+        .input("school_Id", sql.NVarChar(50), school_Id)
+        .input("school_code", sql.NVarChar(50), school_code)
+        .input("img_1", sql.NVarChar(sql.MAX), img_1)
+        .input("img_2", sql.NVarChar(sql.MAX), img_2)
+        .input("img_3", sql.NVarChar(sql.MAX), img_3)
+        .input("img_4", sql.NVarChar(sql.MAX), img_4)
+        .query(`
+          INSERT INTO SchoolBanner_Master
+          (
+            school_Id,
+            school_code,
+            img_1,
+            img_2,
+            img_3,
+            img_4
+          )
+          VALUES
+          (
+            @school_Id,
+            @school_code,
+            @img_1,
+            @img_2,
+            @img_3,
+            @img_4
+          )
+        `);
+
+      res.status(200).json({
+        success: true,
+        message: "Banner uploaded successfully",
+      });
+
+    } catch (err) {
+      console.error(err);
+
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+);
+//EDIT API's
+app.put(
+  "/banner/:id",
+  imageUpload.fields([
+    { name: "img_1", maxCount: 1 },
+    { name: "img_2", maxCount: 1 },
+    { name: "img_3", maxCount: 1 },
+    { name: "img_4", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { school_Id, school_code } = req.body;
+
+      const pool = await sql.connect(sqlConfig);
+
+      // Get existing record
+      const existingData = await pool
+        .request()
+        .input("id", sql.Int, id)
+        .query(`
+          SELECT *
+          FROM SchoolBanner_Master
+          WHERE id = @id
+        `);
+
+      if (existingData.recordset.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Banner record not found",
+        });
+      }
+
+      const existing = existingData.recordset[0];
+
+      const convertToBase64 = (file) => {
+        if (!file) return null;
+
+        return (
+          // `data:${file.mimetype};base64,` +
+          file.buffer.toString("base64")
+        );
+      };
+
+      // If new image comes → replace old
+      // Else keep existing value
+      const img_1 = req.files?.img_1
+        ? convertToBase64(req.files.img_1[0])
+        : existing.img_1;
+
+      const img_2 = req.files?.img_2
+        ? convertToBase64(req.files.img_2[0])
+        : existing.img_2;
+
+      const img_3 = req.files?.img_3
+        ? convertToBase64(req.files.img_3[0])
+        : existing.img_3;
+
+      const img_4 = req.files?.img_4
+        ? convertToBase64(req.files.img_4[0])
+        : existing.img_4;
+
+      await pool
+        .request()
+        .input("id", sql.Int, id)
+        .input("school_Id",sql.NVarChar(50),school_Id)
+        .input("school_code",sql.NVarChar(50),school_code)
+        .input("img_1", sql.NVarChar(sql.MAX), img_1)
+        .input("img_2", sql.NVarChar(sql.MAX), img_2)
+        .input("img_3", sql.NVarChar(sql.MAX), img_3)
+        .input("img_4", sql.NVarChar(sql.MAX), img_4)
+        .query(`
+          UPDATE SchoolBanner_Master
+          SET
+            img_1 = @img_1,
+            img_2 = @img_2,
+            img_3 = @img_3,
+            img_4 = @img_4
+          WHERE id = @id AND school_Id = @school_Id AND school_code = @school_code
+        `);
+
+      res.status(200).json({
+        success: true,
+        message: "Banner updated successfully",
+      });
+
+    } catch (err) {
+      console.error(err);
+
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+);
+//GET All Data using School_code and School_Id
+app.get("/banner/:school_code/:school_id", async (req, res) => {
+  const { school_code, school_id } = req.params;
+  try {
+    const pool = await getPool();
+
+    const result = await pool.request()
+      .input("school_code", sql.NVarChar(50), school_code)
+      .input("school_Id", sql.NVarChar(50), school_id)
+      .query(`
+        SELECT *
+        FROM SchoolBanner_Master
+        WHERE school_code = @school_code AND school_Id = @school_Id
+      `);
+
+    res.status(200).json({
+      success: true,
+      data: result.recordset,
     });
   } catch (error) {
     console.log(error);
