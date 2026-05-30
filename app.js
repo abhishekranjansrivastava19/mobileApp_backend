@@ -2133,6 +2133,42 @@ app.get("/banner/:school_code/:school_id", async (req, res) => {
   }
 });
 
+app.get("/attendanceReportData/:school_code/:school_id/:from_date/:to_date", async (req, res) => {
+  const { school_code, school_id, from_date, to_date } = req.params;
+
+  try {
+    const pool = await getPool();
+
+    const result = await pool.request()
+      .input("school_code", sql.NVarChar(50), school_code)
+      .input("school_Id", sql.NVarChar(50), school_id)
+      .input("from_date", sql.Date, from_date)
+      .input("to_date", sql.Date, to_date)
+      .query(`
+        SELECT class_name, class_Id, section, student_Id, addmission_no, student_name, attendence_type, 
+               school_code, school_Id, CAST(created_date AS DATE) AS created_date, id
+        FROM Attendence_Master
+        WHERE school_code = @school_code 
+          AND school_Id = @school_Id
+          AND CAST(created_date AS DATE) >= @from_date
+          AND CAST(created_date AS DATE) <= @to_date
+      `);
+
+    res.status(200).json({
+      success: true,
+      count: result.recordset.length,
+      data: result.recordset,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+});
+
 process.on("SIGINT", async () => {
   await pool.close();
   process.exit();
