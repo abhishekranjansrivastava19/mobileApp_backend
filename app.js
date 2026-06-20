@@ -2169,6 +2169,67 @@ app.get("/attendanceReportData/:school_code/:school_id/:from_date/:to_date", asy
   }
 });
 
+
+app.delete("/deleteExamType/:id", async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    const pool = await getPool();
+
+    // Get Exam Type Details
+    const examTypeResult = await pool
+      .request()
+      .input("id", sql.Int, id)
+      .query(`
+        SELECT *
+        FROM Exam_type
+        WHERE Id = @id
+      `);
+
+    if (examTypeResult.recordset.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam type not found",
+      });
+    }
+
+    const examType = examTypeResult.recordset[0];
+
+    // Delete all related calendars
+    const deleteCalendarResult = await pool
+      .request()
+      .input("examName", sql.VarChar, examType.ExamName)
+      .input("schoolCode", sql.VarChar, examType.School_code)
+      .query(`
+        DELETE FROM Exam_Calender
+        WHERE exam_type = @examName
+        AND school_code = @schoolCode
+      `);
+
+    // Delete Exam Type
+    await pool
+      .request()
+      .input("id", sql.Int, id)
+      .query(`
+        DELETE FROM Exam_type
+        WHERE Id = @id
+      `);
+
+    return res.status(200).json({
+      success: true,
+      deletedCalendars: deleteCalendarResult.rowsAffected[0],
+      message: "Exam type and related calendars deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete Exam Type Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 process.on("SIGINT", async () => {
   await pool.close();
   process.exit();
