@@ -2239,8 +2239,8 @@ app.get("/getHolidayCalendar/:school_Id/:school_code", async (req, res) => {
 
     const result = await pool
       .request()
-      .input("school_Id", sql.Int, school_Id)
-      .input("school_code", sql.VarChar, school_code)
+      .input("school_Id", sql.NVarChar(50), school_Id)
+      .input("school_code", sql.NVarChar(50), school_code)
       .query(`
         SELECT 
           id,
