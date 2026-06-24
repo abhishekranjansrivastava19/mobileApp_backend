@@ -2230,6 +2230,89 @@ app.delete("/deleteExamType/:id", async (req, res) => {
   }
 });
 
+
+app.get("/getHolidayCalendar/:school_Id/:school_code", async (req, res) => {
+  try {
+    const { school_Id, school_code } = req.params;
+
+    const pool = await getPool();
+
+    const result = await pool
+      .request()
+      .input("school_Id", sql.Int, school_Id)
+      .input("school_code", sql.VarChar, school_code)
+      .query(`
+        SELECT 
+          id,
+          calender_img,
+          school_Id,
+          school_code,
+          created_date
+        FROM Holiday_Calender
+        WHERE school_Id = @school_Id
+          AND school_code = @school_code
+        ORDER BY id DESC
+      `);
+
+    return res.status(200).json({
+      success: true,
+      message: "Holiday calendar fetched successfully",
+      data: result.recordset,
+    });
+  } catch (error) {
+    console.error("Get Holiday Calendar Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong while fetching holiday calendar",
+      error: error.message,
+    });
+  }
+});
+
+
+
+app.delete("/holiday/deleteHoliday/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const pool = await getPool();
+
+    const holidayResult = await pool
+      .request()
+      .input("id", sql.Int, id)
+      .query(`
+        SELECT * FROM Holiday_Calender WHERE id = @id
+      `);
+
+    if (holidayResult.recordset.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Holiday calendar not found",
+      });
+    }
+
+    await pool
+      .request()
+      .input("id", sql.Int, id)
+      .query(`
+        DELETE FROM Holiday_Calender WHERE id = @id
+      `);
+
+    return res.status(200).json({
+      success: true,
+      message: "Holiday calendar deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete holiday error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while deleting holiday calendar",
+    });
+  }
+});
+
+
+
 process.on("SIGINT", async () => {
   await pool.close();
   process.exit();
