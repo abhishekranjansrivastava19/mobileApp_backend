@@ -2313,6 +2313,75 @@ app.delete("/holiday/deleteHoliday/:id", async (req, res) => {
 
 
 
+
+app.put("/api/v1/student/upload-student-image", async (req, res) => {
+  try {
+    const { school_Id, school_code, scholarno, img } = req.body;
+
+    if (!school_Id || !school_code || !scholarno || !img) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    const pool = await getPool();
+
+    // Check if image already exists
+    const existingStudent = await pool
+      .request()
+      .input("school_Id", sql.VarChar, school_Id)
+      .input("school_code", sql.VarChar, school_code)
+      .input("scholarno", sql.VarChar, scholarno)
+      .query(`
+        SELECT img
+        FROM Student_Master
+        WHERE school_Id = @school_Id
+          AND school_code = @school_code
+          AND scholarno = @scholarno
+      `);
+
+    if (existingStudent.recordset.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    const existingImg = existingStudent.recordset[0].img;
+
+    // Upload if img is empty, otherwise update
+    await pool
+      .request()
+      .input("school_Id", sql.VarChar, school_Id)
+      .input("school_code", sql.VarChar, school_code)
+      .input("scholarno", sql.VarChar, scholarno)
+      .input("img", sql.NVarChar(sql.MAX), img)
+      .query(`
+        UPDATE Student_Master
+        SET img = @img
+        WHERE school_Id = @school_Id
+          AND school_code = @school_code
+          AND scholarno = @scholarno
+      `);
+
+    res.status(200).json({
+      success: true,
+      message: existingImg
+        ? "Student image updated successfully"
+        : "Student image uploaded successfully",
+    });
+  } catch (error) {
+    console.error("Image upload error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while uploading image",
+    });
+  }
+});
+
+
+
 process.on("SIGINT", async () => {
   await pool.close();
   process.exit();
