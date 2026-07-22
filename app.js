@@ -2318,6 +2318,7 @@ app.put("/api/v1/student/upload-student-image", async (req, res) => {
   try {
     const { school_Id, school_code, scholarno, img } = req.body;
 
+    console.log("request body : ", req.body)
     if (!school_Id || !school_code || !scholarno || !img) {
       return res.status(400).json({
         success: false,
@@ -2325,8 +2326,11 @@ app.put("/api/v1/student/upload-student-image", async (req, res) => {
       });
     }
 
+    console.log("All required fields are present")
+
     const pool = await getPool();
 
+    console.log("database connection done")
     // Check if image already exists
     const existingStudent = await pool
       .request()
@@ -2341,6 +2345,8 @@ app.put("/api/v1/student/upload-student-image", async (req, res) => {
           AND scholarno = @scholarno
       `);
 
+      console.log("Database query executed to find existing student: ", existingStudent.recordset[0])
+
     if (existingStudent.recordset.length === 0) {
       return res.status(404).json({
         success: false,
@@ -2349,6 +2355,8 @@ app.put("/api/v1/student/upload-student-image", async (req, res) => {
     }
 
     const existingImg = existingStudent.recordset[0].img;
+
+    consloe.log("Image of existing student : ", existingImg)
 
     // Upload if img is empty, otherwise update
     await pool
@@ -2371,6 +2379,8 @@ app.put("/api/v1/student/upload-student-image", async (req, res) => {
         ? "Student image updated successfully"
         : "Student image uploaded successfully",
     });
+
+    
   } catch (error) {
     console.error("Image upload error:", error);
     res.status(500).json({
