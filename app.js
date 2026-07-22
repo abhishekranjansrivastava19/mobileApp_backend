@@ -2314,7 +2314,7 @@ app.delete("/holiday/deleteHoliday/:id", async (req, res) => {
 
 
 
-app.put("/api/v1/student/upload-student-image", async (req, res) => {
+app.put("/upload-student-image", async (req, res) => {
   try {
     const { school_Id, school_code, scholarno, img } = req.body;
 
@@ -2380,7 +2380,7 @@ app.put("/api/v1/student/upload-student-image", async (req, res) => {
         : "Student image uploaded successfully",
     });
 
-    
+
   } catch (error) {
     console.error("Image upload error:", error);
     res.status(500).json({
