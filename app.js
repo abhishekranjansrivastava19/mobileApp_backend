@@ -2332,7 +2332,7 @@ app.put("/upload-student-image", async (req, res) => {
 
     const existingImg = existingStudent.recordset[0].img;
 
-    consloe.log("Image of existing student : ", existingImg);
+    console.log("Image of existing student : ", existingImg);
 
     // Upload if img is empty, otherwise update
     await pool
