@@ -147,8 +147,7 @@ cron.schedule("0 0 * * *", async () => {
   }
 });
 
-
-// // To Sync Students Attendance Data from AttendanceLogs to Attendence_Master 
+// // To Sync Students Attendance Data from AttendanceLogs to Attendence_Master
 // cron.schedule("0 3 * * *", async () => {
 //   try {
 //     const pool = await getPool();
@@ -839,9 +838,9 @@ app.put("/update-teacher/:school_code/:teacher_Id", async (req, res) => {
 //To Update the ExamType name for admin panel
 app.put(`/update_examtype/:id`, async (req, res) => {
   const { id } = req.params;
-  const { prevexamName, examName, school_code, school_Id} = req.body;
+  const { prevexamName, examName, school_code, school_Id } = req.body;
 
-  if(!id) {
+  if (!id) {
     return res.status(400).json({
       success: false,
       message: "id are required",
@@ -852,12 +851,11 @@ app.put(`/update_examtype/:id`, async (req, res) => {
     const pool = await getPool();
     const request = pool.request();
     await request
-    .input("Id",sql.Int, id)
-    .input("ExamName", sql.NVarChar(100), examName)
-    .input("PrevExamName", sql.NVarChar(100), prevexamName)
-    .input("School_code", sql.NVarChar(50), school_code)
-    .input("School_id", sql.NVarChar(50), school_Id)
-    .query(`
+      .input("Id", sql.Int, id)
+      .input("ExamName", sql.NVarChar(100), examName)
+      .input("PrevExamName", sql.NVarChar(100), prevexamName)
+      .input("School_code", sql.NVarChar(50), school_code)
+      .input("School_id", sql.NVarChar(50), school_Id).query(`
       UPDATE Exam_type
       SET ExamName = @ExamName
       WHERE Id = @Id AND School_code = @School_code AND School_id = @School_id;
@@ -869,11 +867,11 @@ app.put(`/update_examtype/:id`, async (req, res) => {
       UPDATE Marks_Master
       SET exam_Type = @ExamName
       WHERE exam_Type = @PrevExamName AND school_code = @School_code AND school_Id = @School_id;
-      `)
+      `);
     res.status(200).json({
-        success: true,
-        message: "Exam Type Name updated successfully",
-      });
+      success: true,
+      message: "Exam Type Name updated successfully",
+    });
   } catch (error) {
     console.error("Error updating Exam Type Name:", error);
     res.status(500).json({
@@ -882,7 +880,7 @@ app.put(`/update_examtype/:id`, async (req, res) => {
       error: error.message,
     });
   }
-})
+});
 
 app.put("/update_student/:school_Id/:Scholarno", async (req, res) => {
   const { school_Id, Scholarno } = req.params;
@@ -978,10 +976,10 @@ app.put("/update_teacher/:school_Id/:id", async (req, res) => {
 //     const pool = await getPool();
 //     const dbRequest  = pool.request();
 
-//     const result = await dbRequest 
+//     const result = await dbRequest
 //       .input("school_id", sql.VarChar(50), school_id)
 //       .input("school_code", sql.VarChar(50), school_code)
-     
+
 //       .query(`
 //         select * from AttendanceLogs
 //         WHERE school_id = @school_id AND school_code = @school_code
@@ -1034,21 +1032,28 @@ app.put("/update_teacher/:school_Id/:id", async (req, res) => {
 // });
 
 //To Delete Student Permanently for admin panel
-app.delete(`/delete_student/:scholarno/:school_code/:school_id/:student_name/:student_class/:student_section`, async (req, res) => {
-  const { scholarno, school_code, school_id, student_name, student_class, student_section } = req.params;
+app.delete(
+  `/delete_student/:scholarno/:school_code/:school_id/:student_name/:student_class/:student_section`,
+  async (req, res) => {
+    const {
+      scholarno,
+      school_code,
+      school_id,
+      student_name,
+      student_class,
+      student_section,
+    } = req.params;
 
-  try {
-    const pool = await getPool();
-    const request = pool.request();
-    await request
-    .input("ScholarNo",sql.NVarChar(50), scholarno)
-    .input("School_code", sql.NVarChar(50), school_code)
-    .input("School_id", sql.NVarChar(50), school_id)
-    .input("StudentName", sql.NVarChar(150), student_name)
-    .input("Class", sql.NVarChar(150), student_class)
-    .input("Section", sql.NVarChar(150), student_section)
-    
-    .query(`
+    try {
+      const pool = await getPool();
+      const request = pool.request();
+      await request
+        .input("ScholarNo", sql.NVarChar(50), scholarno)
+        .input("School_code", sql.NVarChar(50), school_code)
+        .input("School_id", sql.NVarChar(50), school_id)
+        .input("StudentName", sql.NVarChar(150), student_name)
+        .input("Class", sql.NVarChar(150), student_class)
+        .input("Section", sql.NVarChar(150), student_section).query(`
       DELETE FROM Student_Master
       WHERE school_code = @School_code AND school_Id = @School_id AND Scholarno = @ScholarNo AND StudentName = @StudentName AND AppliedClass = @Class AND SectionName = @Section ;
 
@@ -1060,20 +1065,21 @@ app.delete(`/delete_student/:scholarno/:school_code/:school_id/:student_name/:st
 
       DELETE FROM Query_Master
       WHERE school_code = @School_code AND school_Id = @School_id AND class_name = @Class AND section = @Section AND sent_by_student = @StudentName;
-      `)
-    res.status(200).json({
+      `);
+      res.status(200).json({
         success: true,
         message: "Student Deleted successfully",
       });
-  } catch (error) {
-    console.error("Error Deleting Student Data:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error Deleting Student",
-      error: error.message,
-    });
+    } catch (error) {
+      console.error("Error Deleting Student Data:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error Deleting Student",
+        error: error.message,
+      });
+    }
   }
-})
+);
 
 app.post("/api/v1/students", async (req, res) => {
   const {
@@ -1481,7 +1487,6 @@ app.delete("/api/v1/themes/:school_code", async (req, res) => {
   }
 });
 
-
 // GET Teacher + Login details by School Code (double join)
 app.get("/getBySchoolCode/:school_code", async (req, res) => {
   const { school_code } = req.params;
@@ -1490,9 +1495,9 @@ app.get("/getBySchoolCode/:school_code", async (req, res) => {
     // const pool = await sql.connect(dbConfig);
     const pool = await getPool();
 
-    const result = await pool.request()
-      .input("school_code", sql.VarChar, school_code)
-      .query(`
+    const result = await pool
+      .request()
+      .input("school_code", sql.VarChar, school_code).query(`
         SELECT 
           TM.teacher_name,
           TM.gender,
@@ -1515,7 +1520,6 @@ app.get("/getBySchoolCode/:school_code", async (req, res) => {
       count: result.recordset.length,
       data: result.recordset,
     });
-
   } catch (error) {
     console.log(error);
     res.status(500).json({
@@ -1527,18 +1531,20 @@ app.get("/getBySchoolCode/:school_code", async (req, res) => {
 });
 
 // GET Teacher + Login details by School Code (double join)
-app.get("/getcurrentDateAttendance/:school_code/:school_id/:date", async (req, res) => {
-  const { school_code , school_id, date} = req.params;
+app.get(
+  "/getcurrentDateAttendance/:school_code/:school_id/:date",
+  async (req, res) => {
+    const { school_code, school_id, date } = req.params;
 
-  try {
-    // const pool = await sql.connect(dbConfig);
-    const pool = await getPool();
+    try {
+      // const pool = await sql.connect(dbConfig);
+      const pool = await getPool();
 
-    const result = await pool.request()
-      .input("school_code", sql.VarChar, school_code)
-      .input("school_Id", sql.VarChar, school_id)
-      .input("Date", sql.Date, date)
-      .query(`
+      const result = await pool
+        .request()
+        .input("school_code", sql.VarChar, school_code)
+        .input("school_Id", sql.VarChar, school_id)
+        .input("Date", sql.Date, date).query(`
         SELECT 
           * FROM Attendence_Master
         WHERE school_code = @school_code AND school_Id = @school_Id AND CAST(created_date as DATE) = @Date
@@ -1548,14 +1554,15 @@ app.get("/getcurrentDateAttendance/:school_code/:school_id/:date", async (req, r
         success: true,
         data: result.recordset,
       });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: error.message,
-    });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Server Error",
+        error: error.message,
+      });
+    }
   }
-});
+);
 
 app.get("/getAllAdminSchools", async (req, res) => {
   try {
@@ -1581,15 +1588,14 @@ app.get("/getAllAdminSchools", async (req, res) => {
     res.status(200).json({
       success: true,
       count: result.recordset.length,
-      data: result.recordset
+      data: result.recordset,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
       message: "Server Error",
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -1602,7 +1608,7 @@ app.post("/class", async (req, res) => {
     school_Id,
     school_code,
     created_date,
-    serial_no
+    serial_no,
   } = req.body;
 
   const pool = await getPool();
@@ -1619,8 +1625,7 @@ app.post("/class", async (req, res) => {
     const serialCheck = await checkRequest
       .input("serial_no", sql.Int, serial_no)
       .input("school_Id", sql.NVarChar(50), school_Id)
-      .input("school_code", sql.NVarChar(50), school_code)
-      .query(`
+      .input("school_code", sql.NVarChar(50), school_code).query(`
         SELECT 1 
         FROM Class_Master WITH (UPDLOCK, HOLDLOCK)
         WHERE serial_no = @serial_no
@@ -1642,8 +1647,7 @@ app.post("/class", async (req, res) => {
     const nameCheck = await new sql.Request(transaction)
       .input("class_name", sql.NVarChar(50), class_name)
       .input("school_Id", sql.NVarChar(50), school_Id)
-      .input("school_code", sql.NVarChar(50), school_code)
-      .query(`
+      .input("school_code", sql.NVarChar(50), school_code).query(`
         SELECT 1 
         FROM Class_Master WITH (UPDLOCK, HOLDLOCK)
         WHERE class_name = @class_name
@@ -1668,8 +1672,7 @@ app.post("/class", async (req, res) => {
       .input("school_Id", sql.NVarChar(50), school_Id)
       .input("school_code", sql.NVarChar(50), school_code)
       .input("created_date", sql.DateTime, created_date)
-      .input("serial_no", sql.Int, serial_no)
-      .query(`
+      .input("serial_no", sql.Int, serial_no).query(`
         INSERT INTO Class_Master 
         (class_Id, class_name, school_Id, school_code, serial_no, created_date)
         VALUES (@class_Id, @class_name, @school_Id, @school_code, @serial_no, @created_date)
@@ -1679,9 +1682,8 @@ app.post("/class", async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Class Inserted successfully."
+      message: "Class Inserted successfully.",
     });
-
   } catch (err) {
     console.error("INSERT ERROR:", err);
 
@@ -1693,7 +1695,7 @@ app.post("/class", async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: err.message
+      message: err.message,
     });
   }
 });
@@ -1704,10 +1706,10 @@ app.get("/fetchallclasss/:school_code/:school_id", async (req, res) => {
   try {
     const pool = await getPool();
 
-    const result = await pool.request()
+    const result = await pool
+      .request()
       .input("school_code", sql.NVarChar(50), school_code)
-      .input("school_Id", sql.NVarChar(50), school_id)
-      .query(`
+      .input("school_Id", sql.NVarChar(50), school_id).query(`
         SELECT class_Id, class_name, school_Id, school_code, id, serial_no
         FROM Class_Master
         WHERE school_code = @school_code AND school_Id = @school_Id
@@ -1737,7 +1739,7 @@ app.put("/update_class/:id", async (req, res) => {
     serial_no,
     created_date,
     school_Id,
-    school_code
+    school_code,
   } = req.body;
 
   if (!id) {
@@ -1762,8 +1764,7 @@ app.put("/update_class/:id", async (req, res) => {
       .input("serial_no", sql.Int, serial_no)
       .input("school_Id", sql.NVarChar(50), school_Id)
       .input("school_code", sql.NVarChar(50), school_code)
-      .input("Id", sql.Int, id)
-      .query(`
+      .input("Id", sql.Int, id).query(`
         SELECT 1 
         FROM Class_Master WITH (UPDLOCK, HOLDLOCK)
         WHERE serial_no = @serial_no
@@ -1790,10 +1791,9 @@ app.put("/update_class/:id", async (req, res) => {
       .input("class_name", sql.NVarChar(50), class_name)
       .input("serial_no", sql.Int, serial_no)
       .input("Id", sql.Int, id)
-      .input("created_date",sql.DateTime,created_date)
+      .input("created_date", sql.DateTime, created_date)
       .input("school_Id", sql.NVarChar(50), school_Id)
-      .input("school_code", sql.NVarChar(50), school_code)
-      .query(`
+      .input("school_code", sql.NVarChar(50), school_code).query(`
         UPDATE Class_Master
         SET class_Id = @class_Id,
             class_name = @class_name,
@@ -1821,7 +1821,6 @@ app.put("/update_class/:id", async (req, res) => {
       success: true,
       message: "Class updated successfully",
     });
-
   } catch (error) {
     console.error("UPDATE ERROR:", error);
 
@@ -1840,7 +1839,7 @@ app.put("/update_class/:id", async (req, res) => {
 });
 
 app.delete("/delete_class/:id/:school_id/:school_code", async (req, res) => {
-  const { id , school_id, school_code } = req.params;
+  const { id, school_id, school_code } = req.params;
 
   if (!id) {
     return res.status(400).json({
@@ -1851,21 +1850,21 @@ app.delete("/delete_class/:id/:school_id/:school_code", async (req, res) => {
   try {
     const pool = await getPool();
 
-    const result = await pool.request()
+    const result = await pool
+      .request()
       .input("school_code", sql.NVarChar(50), school_code)
       .input("school_Id", sql.NVarChar(50), school_id)
-      .input("id", sql.Int, id)
-      .query(`
+      .input("id", sql.Int, id).query(`
         DELETE FROM Class_Master
         WHERE school_code = @school_code AND school_Id = @school_Id AND id = @id
       `);
 
-      if (result.rowsAffected[0] === 0) {
-        return res.status(200).json({
-          success: false,
-          message: "Class not found or already deleted",
-        });
-      }
+    if (result.rowsAffected[0] === 0) {
+      return res.status(200).json({
+        success: false,
+        message: "Class not found or already deleted",
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -1886,12 +1885,7 @@ const imageUpload = multer({
   storage: multer.memoryStorage(),
 
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      "image/png",
-      "image/jpeg",
-      "image/jpg",
-      "image/webp",
-    ];
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 
     if (!allowedTypes.includes(file.mimetype)) {
       return cb(new Error("Only image files are allowed!"), false);
@@ -1920,9 +1914,7 @@ app.post(
       const convertToBase64 = (file) => {
         if (!file) return null;
 
-        return (
-          file.buffer.toString("base64")
-        );
+        return file.buffer.toString("base64");
       };
 
       const img_1 = req.files?.img_1
@@ -1947,8 +1939,7 @@ app.post(
       const existingRecord = await pool
         .request()
         .input("school_Id", sql.NVarChar(50), school_Id)
-        .input("school_code", sql.NVarChar(50), school_code)
-        .query(`
+        .input("school_code", sql.NVarChar(50), school_code).query(`
           SELECT id
           FROM SchoolBanner_Master
           WHERE school_Id = @school_Id
@@ -1958,8 +1949,7 @@ app.post(
       if (existingRecord.recordset.length > 0) {
         return res.status(400).json({
           success: false,
-          message:
-            "Banner already exists for this school_Id and school_code",
+          message: "Banner already exists for this school_Id and school_code",
         });
       }
 
@@ -1971,8 +1961,7 @@ app.post(
         .input("img_1", sql.NVarChar(sql.MAX), img_1)
         .input("img_2", sql.NVarChar(sql.MAX), img_2)
         .input("img_3", sql.NVarChar(sql.MAX), img_3)
-        .input("img_4", sql.NVarChar(sql.MAX), img_4)
-        .query(`
+        .input("img_4", sql.NVarChar(sql.MAX), img_4).query(`
           INSERT INTO SchoolBanner_Master
           (
             school_Id,
@@ -1997,7 +1986,6 @@ app.post(
         success: true,
         message: "Banner uploaded successfully",
       });
-
     } catch (err) {
       console.error(err);
 
@@ -2025,10 +2013,7 @@ app.put(
       const pool = await sql.connect(sqlConfig);
 
       // Get existing record
-      const existingData = await pool
-        .request()
-        .input("id", sql.Int, id)
-        .query(`
+      const existingData = await pool.request().input("id", sql.Int, id).query(`
           SELECT *
           FROM SchoolBanner_Master
           WHERE id = @id
@@ -2073,13 +2058,12 @@ app.put(
       await pool
         .request()
         .input("id", sql.Int, id)
-        .input("school_Id",sql.NVarChar(50),school_Id)
-        .input("school_code",sql.NVarChar(50),school_code)
+        .input("school_Id", sql.NVarChar(50), school_Id)
+        .input("school_code", sql.NVarChar(50), school_code)
         .input("img_1", sql.NVarChar(sql.MAX), img_1)
         .input("img_2", sql.NVarChar(sql.MAX), img_2)
         .input("img_3", sql.NVarChar(sql.MAX), img_3)
-        .input("img_4", sql.NVarChar(sql.MAX), img_4)
-        .query(`
+        .input("img_4", sql.NVarChar(sql.MAX), img_4).query(`
           UPDATE SchoolBanner_Master
           SET
             img_1 = @img_1,
@@ -2093,7 +2077,6 @@ app.put(
         success: true,
         message: "Banner updated successfully",
       });
-
     } catch (err) {
       console.error(err);
 
@@ -2110,10 +2093,10 @@ app.get("/banner/:school_code/:school_id", async (req, res) => {
   try {
     const pool = await getPool();
 
-    const result = await pool.request()
+    const result = await pool
+      .request()
       .input("school_code", sql.NVarChar(50), school_code)
-      .input("school_Id", sql.NVarChar(50), school_id)
-      .query(`
+      .input("school_Id", sql.NVarChar(50), school_id).query(`
         SELECT *
         FROM SchoolBanner_Master
         WHERE school_code = @school_code AND school_Id = @school_Id
@@ -2133,18 +2116,20 @@ app.get("/banner/:school_code/:school_id", async (req, res) => {
   }
 });
 
-app.get("/attendanceReportData/:school_code/:school_id/:from_date/:to_date", async (req, res) => {
-  const { school_code, school_id, from_date, to_date } = req.params;
+app.get(
+  "/attendanceReportData/:school_code/:school_id/:from_date/:to_date",
+  async (req, res) => {
+    const { school_code, school_id, from_date, to_date } = req.params;
 
-  try {
-    const pool = await getPool();
+    try {
+      const pool = await getPool();
 
-    const result = await pool.request()
-      .input("school_code", sql.NVarChar(50), school_code)
-      .input("school_Id", sql.NVarChar(50), school_id)
-      .input("from_date", sql.Date, from_date)
-      .input("to_date", sql.Date, to_date)
-      .query(`
+      const result = await pool
+        .request()
+        .input("school_code", sql.NVarChar(50), school_code)
+        .input("school_Id", sql.NVarChar(50), school_id)
+        .input("from_date", sql.Date, from_date)
+        .input("to_date", sql.Date, to_date).query(`
         SELECT class_name, class_Id, section, student_Id, addmission_no, student_name, attendence_type, 
                school_code, school_Id, CAST(created_date AS DATE) AS created_date, id
         FROM Attendence_Master
@@ -2154,21 +2139,21 @@ app.get("/attendanceReportData/:school_code/:school_id/:from_date/:to_date", asy
           AND CAST(created_date AS DATE) <= @to_date
       `);
 
-    res.status(200).json({
-      success: true,
-      count: result.recordset.length,
-      data: result.recordset,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: error.message,
-    });
+      res.status(200).json({
+        success: true,
+        count: result.recordset.length,
+        data: result.recordset,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        success: false,
+        message: "Server Error",
+        error: error.message,
+      });
+    }
   }
-});
-
+);
 
 app.delete("/deleteExamType/:id", async (req, res) => {
   try {
@@ -2177,10 +2162,7 @@ app.delete("/deleteExamType/:id", async (req, res) => {
     const pool = await getPool();
 
     // Get Exam Type Details
-    const examTypeResult = await pool
-      .request()
-      .input("id", sql.Int, id)
-      .query(`
+    const examTypeResult = await pool.request().input("id", sql.Int, id).query(`
         SELECT *
         FROM Exam_type
         WHERE Id = @id
@@ -2199,18 +2181,14 @@ app.delete("/deleteExamType/:id", async (req, res) => {
     const deleteCalendarResult = await pool
       .request()
       .input("examName", sql.VarChar, examType.ExamName)
-      .input("schoolCode", sql.VarChar, examType.School_code)
-      .query(`
+      .input("schoolCode", sql.VarChar, examType.School_code).query(`
         DELETE FROM Exam_Calender
         WHERE exam_type = @examName
         AND school_code = @schoolCode
       `);
 
     // Delete Exam Type
-    await pool
-      .request()
-      .input("id", sql.Int, id)
-      .query(`
+    await pool.request().input("id", sql.Int, id).query(`
         DELETE FROM Exam_type
         WHERE Id = @id
       `);
@@ -2230,7 +2208,6 @@ app.delete("/deleteExamType/:id", async (req, res) => {
   }
 });
 
-
 app.get("/getHolidayCalendar/:school_Id/:school_code", async (req, res) => {
   try {
     const { school_Id, school_code } = req.params;
@@ -2240,8 +2217,7 @@ app.get("/getHolidayCalendar/:school_Id/:school_code", async (req, res) => {
     const result = await pool
       .request()
       .input("school_Id", sql.NVarChar(50), school_Id)
-      .input("school_code", sql.NVarChar(50), school_code)
-      .query(`
+      .input("school_code", sql.NVarChar(50), school_code).query(`
         SELECT 
           id,
           calender_img,
@@ -2269,18 +2245,13 @@ app.get("/getHolidayCalendar/:school_Id/:school_code", async (req, res) => {
   }
 });
 
-
-
 app.delete("/holiday/deleteHoliday/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
     const pool = await getPool();
 
-    const holidayResult = await pool
-      .request()
-      .input("id", sql.Int, id)
-      .query(`
+    const holidayResult = await pool.request().input("id", sql.Int, id).query(`
         SELECT * FROM Holiday_Calender WHERE id = @id
       `);
 
@@ -2291,10 +2262,7 @@ app.delete("/holiday/deleteHoliday/:id", async (req, res) => {
       });
     }
 
-    await pool
-      .request()
-      .input("id", sql.Int, id)
-      .query(`
+    await pool.request().input("id", sql.Int, id).query(`
         DELETE FROM Holiday_Calender WHERE id = @id
       `);
 
@@ -2311,14 +2279,11 @@ app.delete("/holiday/deleteHoliday/:id", async (req, res) => {
   }
 });
 
-
-
-
 app.put("/upload-student-image", async (req, res) => {
   try {
     const { school_Id, school_code, scholarno, img } = req.body;
 
-    console.log("request body : ", req.body)
+    console.log("request body : ", req.body);
     if (!school_Id || !school_code || !scholarno || !img) {
       return res.status(400).json({
         success: false,
@@ -2326,18 +2291,26 @@ app.put("/upload-student-image", async (req, res) => {
       });
     }
 
-    console.log("All required fields are present")
+    const base64Size = Buffer.byteLength(img, "base64");
+
+    if (base64Size > 20 * 1024) {
+      return res.status(400).json({
+        success: false,
+        message: "Image size must be less than 20KB",
+      });
+    }
+
+    console.log("All required fields are present");
 
     const pool = await getPool();
 
-    console.log("database connection done")
+    console.log("database connection done");
     // Check if image already exists
     const existingStudent = await pool
       .request()
       .input("school_Id", sql.VarChar, school_Id)
       .input("school_code", sql.VarChar, school_code)
-      .input("scholarno", sql.VarChar, scholarno)
-      .query(`
+      .input("scholarno", sql.VarChar, scholarno).query(`
         SELECT img
         FROM Student_Master
         WHERE school_Id = @school_Id
@@ -2345,7 +2318,10 @@ app.put("/upload-student-image", async (req, res) => {
           AND scholarno = @scholarno
       `);
 
-      console.log("Database query executed to find existing student: ", existingStudent.recordset[0])
+    console.log(
+      "Database query executed to find existing student: ",
+      existingStudent.recordset[0]
+    );
 
     if (existingStudent.recordset.length === 0) {
       return res.status(404).json({
@@ -2356,7 +2332,7 @@ app.put("/upload-student-image", async (req, res) => {
 
     const existingImg = existingStudent.recordset[0].img;
 
-    consloe.log("Image of existing student : ", existingImg)
+    consloe.log("Image of existing student : ", existingImg);
 
     // Upload if img is empty, otherwise update
     await pool
@@ -2364,8 +2340,7 @@ app.put("/upload-student-image", async (req, res) => {
       .input("school_Id", sql.VarChar, school_Id)
       .input("school_code", sql.VarChar, school_code)
       .input("scholarno", sql.VarChar, scholarno)
-      .input("img", sql.NVarChar(sql.MAX), img)
-      .query(`
+      .input("img", sql.NVarChar(sql.MAX), img).query(`
         UPDATE Student_Master
         SET img = @img
         WHERE school_Id = @school_Id
@@ -2379,8 +2354,6 @@ app.put("/upload-student-image", async (req, res) => {
         ? "Student image updated successfully"
         : "Student image uploaded successfully",
     });
-
-
   } catch (error) {
     console.error("Image upload error:", error);
     res.status(500).json({
@@ -2389,8 +2362,6 @@ app.put("/upload-student-image", async (req, res) => {
     });
   }
 });
-
-
 
 process.on("SIGINT", async () => {
   await pool.close();
