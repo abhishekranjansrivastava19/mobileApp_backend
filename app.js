@@ -2374,7 +2374,6 @@ const getTeacherAttendanceSummary = async (req, res) => {
       });
     }
 
-    console.log("Request body:", req.body);
     // Use supplied date, otherwise today's date
     const selectedDate = attendance_date
       ? attendance_date
@@ -2413,7 +2412,6 @@ const getTeacherAttendanceSummary = async (req, res) => {
 
     const teacher = teacherResult.recordset[0];
 
-    console.log("Teacher found:", teacher);
 
     // ---------------------------------------------
     // Convert comma separated values to arrays
@@ -2436,16 +2434,7 @@ const getTeacherAttendanceSummary = async (req, res) => {
       .split(",")
       .map((x) => x.trim());
 
-    console.log(
-      "Class IDs:",
-      classIds,
-      "Class Names:",
-      classNames,
-      "Section IDs:",
-      sectionIds,
-      "Section Names:",
-      sectionNames
-    );
+    
     // ---------------------------------------------
     // Create summary for every assigned class
     // ---------------------------------------------
@@ -2492,10 +2481,7 @@ const getTeacherAttendanceSummary = async (req, res) => {
       let holiday = 0;
       let other = 0;
 
-      console.log(
-        `Attendance for class ${className}, section ${sectionName}:`,
-        attendanceResult.recordset
-      );
+      
 
       attendanceResult.recordset.forEach((row) => {
         const type = String(row.attendence_type || "")
@@ -2588,14 +2574,7 @@ const getTeacherAttendanceSummary = async (req, res) => {
       });
     }
 
-    console.log(
-      "Final summaries:",
-      summaries,
-      "for teacher:",
-      teacher.teacher_name,
-      "on date:",
-      selectedDate
-    );
+    
 
     // ---------------------------------------------
     // Response
