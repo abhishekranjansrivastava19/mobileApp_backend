@@ -2467,7 +2467,7 @@ const getTeacherAttendanceSummary = async (req, res) => {
                         AND school_Id = @school_Id
                         AND school_code = @school_code
                         AND section = @section
-                        AND CAST(attendance_date AS DATE) = @attendance_date
+                        AND attendance_date = @attendance_date
                     GROUP BY attendence_type
                 `);
 
