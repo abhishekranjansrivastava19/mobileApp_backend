@@ -2363,34 +2363,33 @@ app.put("/upload-student-image", async (req, res) => {
   }
 });
 
-
 const getTeacherAttendanceSummary = async (req, res) => {
-    try {
-        const { teacher_Id, attendance_date } = req.body;
+  try {
+    const { teacher_Id, attendance_date } = req.body;
 
-        if (!teacher_Id) {
-            return res.status(400).json({
-                success: false,
-                message: "teacher_Id is required"
-            });
-        }
+    if (!teacher_Id) {
+      return res.status(400).json({
+        success: false,
+        message: "teacher_Id is required",
+      });
+    }
 
-        console.log("Request body:", req.body);
-        // Use supplied date, otherwise today's date
-        const selectedDate = attendance_date
-            ? attendance_date
-            : new Date().toISOString().split("T")[0];
+    console.log("Request body:", req.body);
+    // Use supplied date, otherwise today's date
+    const selectedDate = attendance_date
+      ? attendance_date
+      : new Date().toISOString().split("T")[0];
 
-        // const pool = await sql.connect(dbConfig);
-        const pool = await getPool();
+    // const pool = await sql.connect(dbConfig);
+    const pool = await getPool();
 
-        // ---------------------------------------------
-        // Get teacher
-        // ---------------------------------------------
-        const teacherResult = await pool.request()
-            .input("teacher_Id", sql.VarChar, teacher_Id)
-            .input("school_code", sql.VarChar, req.body.school_code)
-            .query(`
+    // ---------------------------------------------
+    // Get teacher
+    // ---------------------------------------------
+    const teacherResult = await pool
+      .request()
+      .input("teacher_Id", sql.VarChar, teacher_Id)
+      .input("school_code", sql.VarChar, req.body.school_code).query(`
                 SELECT
                     teacher_Id,
                     teacher_name,
@@ -2405,64 +2404,71 @@ const getTeacherAttendanceSummary = async (req, res) => {
                 AND school_code = @school_code
             `);
 
-        if (teacherResult.recordset.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Teacher not found"
-            });
-        }
+    if (teacherResult.recordset.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Teacher not found",
+      });
+    }
 
-        const teacher = teacherResult.recordset[0];
+    const teacher = teacherResult.recordset[0];
 
-        console.log("Teacher found:", teacher);
+    console.log("Teacher found:", teacher);
 
-        // ---------------------------------------------
-        // Convert comma separated values to arrays
-        // ---------------------------------------------
+    // ---------------------------------------------
+    // Convert comma separated values to arrays
+    // ---------------------------------------------
 
-        const classIds = String(teacher.class_id || "")
-            .split(",")
-            .map(x => x.trim())
-            .filter(Boolean);
+    const classIds = String(teacher.class_id || "")
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
 
-        const classNames = String(teacher.class_name || "")
-            .split(",")
-            .map(x => x.trim());
+    const classNames = String(teacher.class_name || "")
+      .split(",")
+      .map((x) => x.trim());
 
-        const sectionIds = String(teacher.section_id || "")
-            .split(",")
-            .map(x => x.trim());
+    const sectionIds = String(teacher.section_id || "")
+      .split(",")
+      .map((x) => x.trim());
 
-        const sectionNames = String(teacher.section_name || "")
-            .split(",")
-            .map(x => x.trim());
+    const sectionNames = String(teacher.section_name || "")
+      .split(",")
+      .map((x) => x.trim());
 
-        
-        console.log("Class IDs:", classIds, "Class Names:", classNames, "Section IDs:", sectionIds, "Section Names:", sectionNames);    
-        // ---------------------------------------------
-        // Create summary for every assigned class
-        // ---------------------------------------------
+    console.log(
+      "Class IDs:",
+      classIds,
+      "Class Names:",
+      classNames,
+      "Section IDs:",
+      sectionIds,
+      "Section Names:",
+      sectionNames
+    );
+    // ---------------------------------------------
+    // Create summary for every assigned class
+    // ---------------------------------------------
 
-        const summaries = [];
+    const summaries = [];
 
-        for (let i = 0; i < classIds.length; i++) {
+    for (let i = 0; i < classIds.length; i++) {
+      const classId = classIds[i];
+      const className = classNames[i] || classId;
+      const sectionId = sectionIds[i] || "";
+      const sectionName = sectionNames[i] || sectionId;
 
-            const classId = classIds[i];
-            const className = classNames[i] || classId;
-            const sectionId = sectionIds[i] || "";
-            const sectionName = sectionNames[i] || sectionId;
+      // -----------------------------------------
+      // Get attendance for this class
+      // -----------------------------------------
 
-            // -----------------------------------------
-            // Get attendance for this class
-            // -----------------------------------------
-
-            const attendanceResult = await pool.request()
-                .input("class_id", sql.VarChar, classId)
-                .input("school_Id", sql.VarChar, teacher.school_Id)
-                .input("school_code", sql.VarChar, teacher.school_code)
-                .input("section", sql.VarChar, sectionName)
-                .input("attendance_date", sql.Date, selectedDate)
-                .query(`
+      const attendanceResult = await pool
+        .request()
+        .input("class_id", sql.VarChar, classId)
+        .input("school_Id", sql.VarChar, teacher.school_Id)
+        .input("school_code", sql.VarChar, teacher.school_code)
+        .input("section", sql.VarChar, sectionName)
+        .input("attendance_date", sql.Date, selectedDate).query(`
                     SELECT
                         attendence_type,
                         COUNT(*) AS attendance_count
@@ -2476,152 +2482,154 @@ const getTeacherAttendanceSummary = async (req, res) => {
                     GROUP BY attendence_type
                 `);
 
-            // -----------------------------------------
-            // Initialize counts
-            // -----------------------------------------
+      // -----------------------------------------
+      // Initialize counts
+      // -----------------------------------------
 
-            let present = 0;
-            let absent = 0;
-            let leave = 0;
-            let holiday = 0;
-            let other = 0;
+      let present = 0;
+      let absent = 0;
+      let leave = 0;
+      let holiday = 0;
+      let other = 0;
 
-            console.log(`Attendance for class ${className}, section ${sectionName}:`, attendanceResult.recordset);
+      console.log(
+        `Attendance for class ${className}, section ${sectionName}:`,
+        attendanceResult.recordset
+      );
 
-            attendanceResult.recordset.forEach(row => {
+      attendanceResult.recordset.forEach((row) => {
+        const type = String(row.attendence_type || "")
+          .trim()
+          .toLowerCase();
 
-                const type = String(row.attendence_type || "")
-                    .trim()
-                    .toUpperCase();
+        const count = Number(row.attendance_count);
 
-                const count = Number(row.attendance_count);
+        switch (type) {
+          case "present":
+          case "p":
+            present += count;
+            break;
 
-                switch (type) {
+          case "absent":
+          case "a":
+            absent += count;
+            break;
 
-                    case "P":
-                        present += count;
-                        break;
+          case "leave":
+          case "l":
+            leave += count;
+            break;
 
-                    case "A":
-                        absent += count;
-                        break;
+          case "holiday":
+          case "h":
+            holiday += count;
+            break;
 
-                    case "L":
-                        leave += count;
-                        break;
+          case "other":
+          case "o":
+            other += count;
+            break;
 
-                    case "H":
-                        holiday += count;
-                        break;
+          default:
+            console.log(`Unknown attendance type: ${row.attendence_type}`);
+            break;
+        }
+      });
 
-                    case "O":
-                        other += count;
-                        break;
-                }
-            });
+      const total = present + absent + leave + holiday + other;
 
-            const total =
-                present +
-                absent +
-                leave +
-                holiday +
-                other;
-
-            const getPercentage = (count) => {
-                if (total === 0) {
-                    return 0;
-                }
-
-                return Number(
-                    ((count / total) * 100).toFixed(2)
-                );
-            };
-
-            // -----------------------------------------
-            // Push class summary
-            // -----------------------------------------
-
-            summaries.push({
-
-                class_id: classId,
-
-                class_name: className,
-
-                section_id: sectionId,
-
-                section_name: sectionName,
-
-                total: total,
-
-                present: {
-                    count: present,
-                    percentage: getPercentage(present)
-                },
-
-                absent: {
-                    count: absent,
-                    percentage: getPercentage(absent)
-                },
-
-                leave: {
-                    count: leave,
-                    percentage: getPercentage(leave)
-                },
-
-                holiday: {
-                    count: holiday,
-                    percentage: getPercentage(holiday)
-                },
-
-                other: {
-                    count: other,
-                    percentage: getPercentage(other)
-                }
-            });
+      const getPercentage = (count) => {
+        if (total === 0) {
+          return 0;
         }
 
+        return Number(((count / total) * 100).toFixed(2));
+      };
 
-        console.log("Final summaries:", summaries, "for teacher:", teacher.teacher_name, "on date:", selectedDate);
+      // -----------------------------------------
+      // Push class summary
+      // -----------------------------------------
 
-        // ---------------------------------------------
-        // Response
-        // ---------------------------------------------
+      summaries.push({
+        class_id: classId,
 
-        return res.status(200).json({
-            success: true,
+        class_name: className,
 
-            teacher: {
-                teacher_Id: teacher.teacher_Id,
-                teacher_name: teacher.teacher_name
-            },
+        section_id: sectionId,
 
-            date: selectedDate,
+        section_name: sectionName,
 
-            school: {
-                school_Id: teacher.school_Id,
-                school_code: teacher.school_code
-            },
+        total: total,
 
-            total_classes: summaries.length,
+        present: {
+          count: present,
+          percentage: getPercentage(present),
+        },
 
-            summary: summaries
-        });
+        absent: {
+          count: absent,
+          percentage: getPercentage(absent),
+        },
 
-    } catch (error) {
+        leave: {
+          count: leave,
+          percentage: getPercentage(leave),
+        },
 
-        console.error(
-            "Teacher Attendance Summary Error:",
-            error
-        );
+        holiday: {
+          count: holiday,
+          percentage: getPercentage(holiday),
+        },
 
-        return res.status(500).json({
-            success: false,
-            message: "Internal server error",
-            error: error.message
-        });
+        other: {
+          count: other,
+          percentage: getPercentage(other),
+        },
+      });
     }
-};
 
+    console.log(
+      "Final summaries:",
+      summaries,
+      "for teacher:",
+      teacher.teacher_name,
+      "on date:",
+      selectedDate
+    );
+
+    // ---------------------------------------------
+    // Response
+    // ---------------------------------------------
+
+    return res.status(200).json({
+      success: true,
+
+      teacher: {
+        teacher_Id: teacher.teacher_Id,
+        teacher_name: teacher.teacher_name,
+      },
+
+      date: selectedDate,
+
+      school: {
+        school_Id: teacher.school_Id,
+        school_code: teacher.school_code,
+      },
+
+      total_classes: summaries.length,
+
+      summary: summaries,
+    });
+  } catch (error) {
+    console.error("Teacher Attendance Summary Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
 
 app.post("/teacher-attendance-summary", getTeacherAttendanceSummary);
 
