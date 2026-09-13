@@ -2612,6 +2612,199 @@ const getTeacherAttendanceSummary = async (req, res) => {
 
 app.post("/teacher-attendance-summary", getTeacherAttendanceSummary);
 
+
+
+const getTeacherStudentList = async (req, res) => {
+    try {
+        const {
+            teacher_Id,
+            class_id,
+            section,
+            attendance_date
+        } = req.body;
+
+        console.log("Request body:", req.body);
+
+        // --------------------------------------------------
+        // 1. Validate required fields
+        // --------------------------------------------------
+
+        if (!teacher_Id) {
+            return res.status(400).json({
+                success: false,
+                message: "teacher_Id is required"
+            });
+        }
+
+        if (!class_id) {
+            return res.status(400).json({
+                success: false,
+                message: "class_id is required"
+            });
+        }
+
+        if (!section) {
+            return res.status(400).json({
+                success: false,
+                message: "section is required"
+            });
+        }
+
+        // --------------------------------------------------
+        // 2. Default attendance date = current date
+        // --------------------------------------------------
+
+        const selectedDate = attendance_date
+            ? attendance_date
+            : new Date().toISOString().split("T")[0];
+
+        console.log("Selected attendance date:", selectedDate);
+
+        const pool = await sql.connect(dbConfig);
+
+        // --------------------------------------------------
+        // 3. Get teacher details
+        // --------------------------------------------------
+
+        const teacherResult = await pool.request()
+            .input("teacher_Id", sql.VarChar, teacher_Id)
+            .query(`
+                SELECT
+                    teacher_Id,
+                    teacher_name,
+                    school_Id,
+                    school_code
+                FROM Teacher_Master
+                WHERE teacher_Id = @teacher_Id
+            `);
+
+        if (teacherResult.recordset.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Teacher not found"
+            });
+        }
+
+        const teacher = teacherResult.recordset[0];
+
+        console.log("Teacher found:", teacher);
+
+        // --------------------------------------------------
+        // 4. Fetch students + attendance
+        // --------------------------------------------------
+
+        const studentResult = await pool.request()
+            .input(
+                "school_Id",
+                sql.VarChar,
+                teacher.school_Id
+            )
+            .input(
+                "school_code",
+                sql.VarChar,
+                teacher.school_code
+            )
+            .input(
+                "class_id",
+                sql.VarChar,
+                class_id
+            )
+            .input(
+                "section",
+                sql.VarChar,
+                section
+            )
+            .input(
+                "attendance_date",
+                sql.Date,
+                selectedDate
+            )
+            .query(`
+                SELECT
+                    sm.student_Id,
+                    sm.scholar_no,
+                    sm.student_name,
+                    sm.class_id,
+                    sm.class_name,
+                    sm.section,
+                    sm.school_Id,
+                    sm.school_code,
+
+                    am.id AS attendance_id,
+                    am.attendance_type,
+                    am.attendance_date,
+                    am.created_date
+
+                FROM Student_Master sm
+
+                LEFT JOIN Attendence_Master am
+                    ON am.student_Id = sm.student_Id
+                    AND am.school_Id = sm.school_Id
+                    AND am.school_code = sm.school_code
+                    AND CAST(am.attendance_date AS DATE) = @attendance_date
+
+                WHERE
+                    sm.school_Id = @school_Id
+                    AND sm.school_code = @school_code
+                    AND sm.class_id = @class_id
+                    AND sm.section = @section
+
+                ORDER BY
+                    sm.student_name
+            `);
+
+        console.log(
+            "Students found:",
+            studentResult.recordset.length
+        );
+
+        // --------------------------------------------------
+        // 5. Response
+        // --------------------------------------------------
+
+        return res.status(200).json({
+            success: true,
+
+            teacher: {
+                teacher_Id: teacher.teacher_Id,
+                teacher_name: teacher.teacher_name
+            },
+
+            class: {
+                class_id: class_id,
+                section: section
+            },
+
+            attendance_date: selectedDate,
+
+            total_students:
+                studentResult.recordset.length,
+
+            students: studentResult.recordset
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Teacher Student List Error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
+app.post(
+    "/teacherStudentList",
+    getTeacherStudentList
+);
+
+
+
 process.on("SIGINT", async () => {
   await pool.close();
   process.exit();
