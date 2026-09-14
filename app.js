@@ -2737,7 +2737,7 @@ const getTeacherStudentList = async (req, res) => {
                     ON am.student_Id = sm.student_Id
                     AND am.school_Id = sm.school_Id
                     AND am.school_code = sm.school_code
-                    AND CAST(am.attendance_date AS DATE) = @attendance_date
+                    AND am.attendance_date = @attendance_date
 
                 WHERE
                     sm.school_Id = @school_Id
