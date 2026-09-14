@@ -2732,7 +2732,7 @@ const getTeacherStudentList = async (req, res) => {
                 FROM Student_Master sm
 
                 LEFT JOIN Attendence_Master am
-                    ON am.student_Id = sm.student_Id
+                    ON am.student_Id = sm.Scholarno
                     AND am.school_Id = sm.school_Id
                     AND am.school_code = sm.school_code
                     AND am.attendance_date = @attendance_date
