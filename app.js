@@ -2719,15 +2719,14 @@ const getTeacherStudentList = async (req, res) => {
                 SELECT
                     sm.student_Id,
                     sm.scholar_no,
-                    sm.student_name,
-                    sm.class_id,
-                    sm.class_name,
-                    sm.section,
+                    sm.StudentName,
+                    sm.AppliedClass,
+                    sm.SectionName,
                     sm.school_Id,
                     sm.school_code,
 
                     am.id AS attendance_id,
-                    am.attendance_type,
+                    am.attendence_type,
                     am.attendance_date,
                     am.created_date
 
@@ -2742,8 +2741,8 @@ const getTeacherStudentList = async (req, res) => {
                 WHERE
                     sm.school_Id = @school_Id
                     AND sm.school_code = @school_code
-                    AND sm.class_id = @class_id
-                    AND sm.section = @section
+                    AND sm.AppliedClass = @class_id
+                    AND sm.SectionName = @section
 
                 ORDER BY
                     sm.student_name
