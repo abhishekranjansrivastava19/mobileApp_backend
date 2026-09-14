@@ -2718,7 +2718,7 @@ const getTeacherStudentList = async (req, res) => {
             .query(`
                 SELECT
                     sm.student_Id,
-                    sm.scholar_no,
+                    sm.Scholarno,
                     sm.StudentName,
                     sm.AppliedClass,
                     sm.SectionName,
@@ -2745,7 +2745,7 @@ const getTeacherStudentList = async (req, res) => {
                     AND sm.SectionName = @section
 
                 ORDER BY
-                    sm.student_name
+                    sm.StudentName
             `);
 
         console.log(
