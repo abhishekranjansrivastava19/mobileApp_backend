@@ -2717,7 +2717,6 @@ const getTeacherStudentList = async (req, res) => {
             )
             .query(`
                 SELECT
-                    sm.student_Id,
                     sm.Scholarno,
                     sm.StudentName,
                     sm.AppliedClass,
