@@ -2660,13 +2660,9 @@ const getTeacherStudentList = async (req, res) => {
 
         console.log("Selected attendance date:", selectedDate);
 
-        const pool = await sql.connect(dbConfig);
+         const pool = await getPool();
 
-        // --------------------------------------------------
-        // 3. Get teacher details
-        // --------------------------------------------------
-
-        const teacherResult = await pool.request()
+         const teacherResult = await pool.request()
             .input("teacher_Id", sql.VarChar, teacher_Id)
             .query(`
                 SELECT
