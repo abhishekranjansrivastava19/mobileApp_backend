@@ -2794,7 +2794,7 @@ app.post(
 
 
 
-router.post("/exam-calendar", async (req, res) => {
+app.post("/exam-calendar", async (req, res) => {
     try {
         const {
             school_Id,
