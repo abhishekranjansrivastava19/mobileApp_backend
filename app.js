@@ -2802,7 +2802,7 @@ app.post("/exam-calendar", async (req, res) => {
             exam_type,
         } = req.body;
 
-        const Exam_img = req.body.exam_type
+        const Exam_img = req.body.exam_type && req.body.exam_type.Exam_img ? Buffer.from(req.body.exam_type.Exam_img, "base64") : null;
 
         if (!school_Id || !school_code || !exam_type) {
             return res.status(400).json({
