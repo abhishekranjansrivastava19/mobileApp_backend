@@ -2750,7 +2750,7 @@ const getTeacherStudentList = async (req, res) => {
         console.log(
             "Students found:",
             studentResult.recordset.length,
-            studentResult.recordset
+            "Student List : ", studentResult.recordset
         );
 
         // --------------------------------------------------
@@ -2798,6 +2798,180 @@ app.post(
     getTeacherStudentList
 );
 
+
+
+
+router.post("/exam-calendar", async (req, res) => {
+    try {
+        const {
+            school_Id,
+            school_code,
+            exam_type,
+        } = req.body;
+
+        const Exam_img = req.body.exam_img;
+
+        if (!school_Id || !school_code || !exam_type) {
+            return res.status(400).json({
+                success: false,
+                message: "school_Id, school_code and exam_type are required"
+            });
+        }
+
+        const pool = await getPool();
+
+        // Check whether calendar already exists
+        const existing = await pool.request()
+            .input("school_Id", sql.VarChar, school_Id)
+            .input("school_code", sql.VarChar, school_code)
+            .input("exam_type", sql.VarChar, exam_type)
+            .query(`
+                SELECT TOP 1 id
+                FROM [Enlighten_App].[dbo].[Exam_Calender]
+                WHERE school_Id = @school_Id
+                  AND school_code = @school_code
+                  AND exam_type = @exam_type
+            `);
+
+        // =====================================================
+        // UPDATE EXISTING CALENDAR
+        // =====================================================
+        if (existing.recordset.length > 0) {
+
+            const calendarId = existing.recordset[0].id;
+
+            await pool.request()
+                .input("id", sql.Int, calendarId)
+                .input("Exam_img", sql.VarBinary(sql.MAX), Exam_img)
+                .query(`
+                    UPDATE [Enlighten_App].[dbo].[Exam_Calender]
+                    SET 
+                        Exam_img = @Exam_img,
+                        created_date = GETDATE()
+                    WHERE id = @id
+                `);
+
+            return res.status(200).json({
+                success: true,
+                action: "updated",
+                message: "Exam calendar updated successfully",
+                id: calendarId
+            });
+        }
+
+        // =====================================================
+        // INSERT NEW CALENDAR
+        // =====================================================
+
+        const result = await pool.request()
+            .input("Exam_img", sql.VarBinary(sql.MAX), Exam_img)
+            .input("school_Id", sql.VarChar, school_Id)
+            .input("school_code", sql.VarChar, school_code)
+            .input("exam_type", sql.VarChar, exam_type)
+            .query(`
+                INSERT INTO [Enlighten_App].[dbo].[Exam_Calender]
+                (
+                    Exam_img,
+                    school_Id,
+                    school_code,
+                    exam_type,
+                    created_date
+                )
+                OUTPUT INSERTED.id
+                VALUES
+                (
+                    @Exam_img,
+                    @school_Id,
+                    @school_code,
+                    @exam_type,
+                    GETDATE()
+                )
+            `);
+
+        return res.status(201).json({
+            success: true,
+            action: "inserted",
+            message: "Exam calendar inserted successfully",
+            id: result.recordset[0].id
+        });
+
+    } catch (error) {
+        console.error("Exam Calendar API Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+});
+
+
+router.delete("/exam-type/:id", async (req, res) => {
+    const transaction = new sql.Transaction();
+
+    try {
+        const { id } = req.body;
+
+        const pool = await getPool();
+
+        await transaction.begin(pool);
+
+        // ============================================
+        // DELETE EXAM CALENDAR
+        // ============================================
+
+        await transaction.request()
+            .input("exam_type", sql.VarChar, id)
+            .query(`
+                DELETE FROM [Enlighten_App].[dbo].[Exam_Calender]
+                WHERE exam_type = @exam_type
+            `);
+
+        // ============================================
+        // DELETE EXAM TYPE
+        // ============================================
+
+        const result = await transaction.request()
+            .input("Id", sql.Int, id)
+            .query(`
+                DELETE FROM [Enlighten_App].[dbo].[Exam_type]
+                WHERE Id = @Id
+            `);
+
+        if (result.rowsAffected[0] === 0) {
+            await transaction.rollback();
+
+            return res.status(404).json({
+                success: false,
+                message: "Exam type not found"
+            });
+        }
+
+        await transaction.commit();
+
+        return res.status(200).json({
+            success: true,
+            message: "Exam type and associated exam calendar deleted successfully"
+        });
+
+    } catch (error) {
+
+        try {
+            await transaction.rollback();
+        } catch (rollbackError) {
+            console.error("Rollback error:", rollbackError);
+        }
+
+        console.error("Delete Exam Type Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+});
 
 
 process.on("SIGINT", async () => {
