@@ -3136,12 +3136,17 @@ app.get("/exam-calendar/:school_code", async (req, res) => {
     try {
         const { school_code } = req.params;
 
+        console.log(req.params)
+
         if (!school_code) {
             return res.status(400).json({
                 success: false,
                 message: "school_code is required"
             });
         }
+
+
+        console.log("Fetching exam calendar for school_code:", school_code);
 
         const pool = await getPool();
 
@@ -3170,6 +3175,7 @@ app.get("/exam-calendar/:school_code", async (req, res) => {
                 ORDER BY ET.Id DESC
             `);
 
+            console.log("Exam calendar fetched successfully for school_code:", school_code, "Count:", result.recordset.length);
         return res.status(200).json({
             success: true,
             count: result.recordset.length,
