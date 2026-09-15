@@ -2951,7 +2951,7 @@ app.post("/exam-calendar", async (req, res) => {
       exam_type
     } = req.body;
     
-    const Exam_img = req.body.exam_type
+    const Exam_img = req.body.exam_img
 
     if (!school_Id || !school_code || !exam_type) {
       return res.status(400).json({
