@@ -2939,20 +2939,19 @@ app.post("/exam-calendar", async (req, res) => {
 
 
 app.delete("/exam-type/:id", async (req, res) => {
-    const transaction = new sql.Transaction();
 
     try {
         const { id } = req.body;
 
         const pool = await getPool();
 
-        await transaction.begin(pool);
+        
 
         // ============================================
         // DELETE EXAM CALENDAR
         // ============================================
 
-        await transaction.request()
+        await pool.request()
             .input("exam_type", sql.VarChar, id)
             .query(`
                 DELETE FROM [Enlighten_App].[dbo].[Exam_Calender]
@@ -2963,23 +2962,12 @@ app.delete("/exam-type/:id", async (req, res) => {
         // DELETE EXAM TYPE
         // ============================================
 
-        const result = await transaction.request()
+        await pool.request()
             .input("Id", sql.Int, id)
             .query(`
                 DELETE FROM [Enlighten_App].[dbo].[Exam_type]
                 WHERE Id = @Id
             `);
-
-        if (result.rowsAffected[0] === 0) {
-            await transaction.rollback();
-
-            return res.status(404).json({
-                success: false,
-                message: "Exam type not found"
-            });
-        }
-
-        await transaction.commit();
 
         return res.status(200).json({
             success: true,
@@ -2987,13 +2975,6 @@ app.delete("/exam-type/:id", async (req, res) => {
         });
 
     } catch (error) {
-
-        try {
-            await transaction.rollback();
-        } catch (rollbackError) {
-            console.error("Rollback error:", rollbackError);
-        }
-
         console.error("Delete Exam Type Error:", error);
 
         return res.status(500).json({
