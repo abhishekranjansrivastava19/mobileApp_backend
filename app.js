@@ -3175,7 +3175,7 @@ app.get("/exam-calendar/:school_code", async (req, res) => {
                 ORDER BY ET.Id DESC
             `);
 
-            console.log("Exam calendar fetched successfully for school_code:", school_code, "Count:", result.recordset.length);
+            console.log("Exam calendar fetched successfully for school_code:", school_code, "data:", result.recordset);
         return res.status(200).json({
             success: true,
             count: result.recordset.length,
