@@ -2828,6 +2828,8 @@ app.post("/exam-calendar", async (req, res) => {
                   AND exam_type = @exam_type
             `);
 
+
+            console.log("Existing calendar check result:", existing.recordset);
         // =====================================================
         // UPDATE EXISTING CALENDAR
         // =====================================================
@@ -2853,6 +2855,9 @@ app.post("/exam-calendar", async (req, res) => {
                 id: calendarId
             });
         }
+
+
+        console.log("Inserting new exam calendar for school_Id:", school_Id, "school_code:", school_code, "exam_type:", exam_type);
 
         // =====================================================
         // INSERT NEW CALENDAR
