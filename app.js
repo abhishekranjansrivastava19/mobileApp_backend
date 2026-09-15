@@ -3006,12 +3006,9 @@ app.delete("/exam-type/:id", async (req, res) => {
 
 
 
-app.get("/exam-calendar/:school_code", async (req, res) => {
-  console.log("API start running...")
+router.get("/exam-calendar/:school_code", async (req, res) => {
     try {
         const { school_code } = req.params;
-
-        console.log(req.params)
 
         if (!school_code) {
             return res.status(400).json({
@@ -3020,13 +3017,8 @@ app.get("/exam-calendar/:school_code", async (req, res) => {
             });
         }
 
+        const pool = await sql.connect();
 
-        console.log("school_code: ", school_code)
-
-        const pool = await getPool();
-
-        console.log("Database connection established...")
-        
         const result = await pool.request()
             .input("school_code", sql.VarChar, school_code)
             .query(`
@@ -3043,7 +3035,7 @@ app.get("/exam-calendar/:school_code", async (req, res) => {
                 FROM [Enlighten_App].[dbo].[Exam_type] ET
 
                 LEFT JOIN [Enlighten_App].[dbo].[Exam_Calender] EC
-                    ON EC.exam_type = ET.Id
+                    ON EC.exam_type = ET.ExamName
                     AND EC.school_code = ET.School_code
                     AND EC.school_Id = ET.School_id
 
@@ -3059,6 +3051,7 @@ app.get("/exam-calendar/:school_code", async (req, res) => {
         });
 
     } catch (error) {
+
         console.error("Fetch Exam Calendar Error:", error);
 
         return res.status(500).json({
