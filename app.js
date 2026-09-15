@@ -3006,7 +3006,7 @@ app.delete("/exam-type/:id", async (req, res) => {
 
 
 
-router.get("/exam-calendar/:school_code", async (req, res) => {
+app.get("/exam-calendar/:school_code", async (req, res) => {
     try {
         const { school_code } = req.params;
 
@@ -3017,7 +3017,7 @@ router.get("/exam-calendar/:school_code", async (req, res) => {
             });
         }
 
-        const pool = await sql.connect();
+        const pool = await getPool();
 
         const result = await pool.request()
             .input("school_code", sql.VarChar, school_code)
