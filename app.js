@@ -3092,6 +3092,8 @@ app.post("/exam-calendar", async (req, res) => {
 
 app.delete("/exam-type/:id", async (req, res) => {
 
+  console.log("Delete Exam Type Request Body:", req.body);
+
     try {
         const { id } = req.body;
 
@@ -3103,8 +3105,20 @@ app.delete("/exam-type/:id", async (req, res) => {
         // DELETE EXAM CALENDAR
         // ============================================
 
+        const result = await pool.request()  
+            .input("Id", sql.Int, id)
+            .query(`Select * from Exam_type where Id = @Id`);
+
+        if (result.recordset.length === 0) {
+          res.status(400).json({
+            success: false,
+            message: "Exam Type Not found",
+        });
+      }
+        const examName = result.recordset[0].ExamName;
+
         await pool.request()
-            .input("exam_type", sql.VarChar, id)
+            .input("exam_type", sql.VarChar, examName)
             .query(`
                 DELETE FROM [Enlighten_App].[dbo].[Exam_Calender]
                 WHERE exam_type = @exam_type
