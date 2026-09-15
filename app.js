@@ -2953,6 +2953,9 @@ app.post("/exam-calendar", async (req, res) => {
     
     const Exam_img = req.body.exam_img
 
+
+    console.log("req.body", req.body);
+
     if (!school_Id || !school_code || !exam_type) {
       return res.status(400).json({
         success: false,
@@ -2988,6 +2991,9 @@ app.post("/exam-calendar", async (req, res) => {
 
       imageBuffer = Buffer.from(base64Data, "base64");
     }
+
+
+    console.log("existing", existing.recordset);
 
     // =====================================================
     // UPDATE EXISTING CALENDAR
@@ -3030,6 +3036,7 @@ app.post("/exam-calendar", async (req, res) => {
       });
     }
 
+    console.log("imageBuffer", imageBuffer);
     // =====================================================
     // CREATE NEW CALENDAR
     // =====================================================
