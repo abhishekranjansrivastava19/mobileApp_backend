@@ -3020,8 +3020,13 @@ app.get("/exam-calendar/:school_code", async (req, res) => {
             });
         }
 
+
+        console.log("school_code: ", school_code)
+
         const pool = await getPool();
 
+        console.log("Database connection established...")
+        
         const result = await pool.request()
             .input("school_code", sql.VarChar, school_code)
             .query(`
