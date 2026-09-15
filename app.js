@@ -2794,17 +2794,14 @@ app.post(
 
 
 
-app.post("/exam-calendar", async (req, res) => {
+router.post("/exam-calendar", async (req, res) => {
     try {
         const {
             school_Id,
             school_code,
             exam_type,
+            Exam_img
         } = req.body;
-
-        const Exam_img = req.body.exam_img;
-
-        console.log(req.body)
 
         if (!school_Id || !school_code || !exam_type) {
             return res.status(400).json({
@@ -2813,40 +2810,69 @@ app.post("/exam-calendar", async (req, res) => {
             });
         }
 
-        const pool = await getPool();
+        const pool = await sql.connect();
 
-        // Check whether calendar already exists
+        // =====================================================
+        // CHECK EXISTING CALENDAR
+        // =====================================================
+
         const existing = await pool.request()
             .input("school_Id", sql.VarChar, school_Id)
             .input("school_code", sql.VarChar, school_code)
             .input("exam_type", sql.VarChar, exam_type)
             .query(`
-                SELECT TOP 1 id
+                SELECT TOP 1
+                    id,
+                    Exam_img
                 FROM [Enlighten_App].[dbo].[Exam_Calender]
                 WHERE school_Id = @school_Id
                   AND school_code = @school_code
                   AND exam_type = @exam_type
+                ORDER BY id DESC
             `);
 
-
-            console.log("Existing calendar check result:", existing.recordset);
         // =====================================================
         // UPDATE EXISTING CALENDAR
         // =====================================================
+
         if (existing.recordset.length > 0) {
 
             const calendarId = existing.recordset[0].id;
 
-            await pool.request()
-                .input("id", sql.Int, calendarId)
-                .input("Exam_img", sql.VarBinary(sql.MAX), Exam_img)
-                .query(`
-                    UPDATE [Enlighten_App].[dbo].[Exam_Calender]
-                    SET 
-                        Exam_img = @Exam_img,
-                        created_date = GETDATE()
-                    WHERE id = @id
-                `);
+            // -------------------------------------------------
+            // IMAGE PROVIDED -> UPDATE IMAGE
+            // -------------------------------------------------
+
+            if (Exam_img !== undefined && Exam_img !== null && Exam_img !== "") {
+
+                await pool.request()
+                    .input("id", sql.Int, calendarId)
+                    .input("Exam_img", sql.VarBinary(sql.MAX), Exam_img)
+                    .query(`
+                        UPDATE [Enlighten_App].[dbo].[Exam_Calender]
+                        SET
+                            Exam_img = @Exam_img,
+                            created_date = GETDATE()
+                        WHERE id = @id
+                    `);
+
+            }
+
+            // -------------------------------------------------
+            // NO IMAGE -> KEEP OLD IMAGE
+            // -------------------------------------------------
+
+            else {
+
+                await pool.request()
+                    .input("id", sql.Int, calendarId)
+                    .query(`
+                        UPDATE [Enlighten_App].[dbo].[Exam_Calender]
+                        SET
+                            created_date = GETDATE()
+                        WHERE id = @id
+                    `);
+            }
 
             return res.status(200).json({
                 success: true,
@@ -2856,12 +2882,16 @@ app.post("/exam-calendar", async (req, res) => {
             });
         }
 
-
-        console.log("Inserting new exam calendar for school_Id:", school_Id, "school_code:", school_code, "exam_type:", exam_type);
-
         // =====================================================
         // INSERT NEW CALENDAR
         // =====================================================
+
+        if (Exam_img === undefined || Exam_img === null || Exam_img === "") {
+            return res.status(400).json({
+                success: false,
+                message: "Exam_img is required when creating a new exam calendar"
+            });
+        }
 
         const result = await pool.request()
             .input("Exam_img", sql.VarBinary(sql.MAX), Exam_img)
@@ -2896,6 +2926,7 @@ app.post("/exam-calendar", async (req, res) => {
         });
 
     } catch (error) {
+
         console.error("Exam Calendar API Error:", error);
 
         return res.status(500).json({
