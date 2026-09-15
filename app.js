@@ -2955,6 +2955,7 @@ app.post("/exam-calendar", async (req, res) => {
 
 
     console.log("req.body", req.body);
+    console.log(Exam_img)
 
     if (!school_Id || !school_code || !exam_type) {
       return res.status(400).json({
