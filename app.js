@@ -2800,8 +2800,9 @@ app.post("/exam-calendar", async (req, res) => {
             school_Id,
             school_code,
             exam_type,
-            Exam_img
         } = req.body;
+
+        const Exam_img = req.body.exam_type
 
         if (!school_Id || !school_code || !exam_type) {
             return res.status(400).json({
@@ -2809,6 +2810,8 @@ app.post("/exam-calendar", async (req, res) => {
                 message: "school_Id, school_code and exam_type are required"
             });
         }
+
+        console.log("req.body", req.body)
 
         const pool = await getPool();
 
@@ -2831,6 +2834,8 @@ app.post("/exam-calendar", async (req, res) => {
                 ORDER BY id DESC
             `);
 
+
+            console.log("existing", existing.recordset)
         // =====================================================
         // UPDATE EXISTING CALENDAR
         // =====================================================
@@ -2945,7 +2950,7 @@ app.delete("/exam-type/:id", async (req, res) => {
 
         const pool = await getPool();
 
-        
+        console.log(req.body)
 
         // ============================================
         // DELETE EXAM CALENDAR
