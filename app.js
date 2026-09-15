@@ -3007,8 +3007,11 @@ app.delete("/exam-type/:id", async (req, res) => {
 
 
 app.get("/exam-calendar/:school_code", async (req, res) => {
+  console.log("API start running...")
     try {
         const { school_code } = req.params;
+
+        console.log(req.body)
 
         if (!school_code) {
             return res.status(400).json({
