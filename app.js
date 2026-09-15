@@ -2982,15 +2982,15 @@ app.post("/exam-calendar", async (req, res) => {
       `);
 
     // Convert Base64 image to Buffer
-    let imageBuffer = null;
+    // let imageBuffer = null;
 
-    if (Exam_img) {
-      const base64Data = Exam_img.includes(",")
-        ? Exam_img.split(",")[1]
-        : Exam_img;
+    // if (Exam_img) {
+    //   const base64Data = Exam_img.includes(",")
+    //     ? Exam_img.split(",")[1]
+    //     : Exam_img;
 
-      imageBuffer = Buffer.from(base64Data, "base64");
-    }
+    //   imageBuffer = Buffer.from(base64Data, "base64");
+    // }
 
 
     console.log("existing", existing.recordset);
@@ -3008,9 +3008,9 @@ app.post("/exam-calendar", async (req, res) => {
         .input("school_code", sql.VarChar, school_code)
         .input("exam_type", sql.VarChar, exam_type);
 
-      if (imageBuffer) {
+      if (Exam_img) {
         request
-          .input("Exam_img", sql.VarBinary(sql.MAX), imageBuffer);
+          .input("Exam_img", sql.NVarChar(sql.MAX), Exam_img);
 
         await request.query(`
           UPDATE [Enlighten_App].[dbo].[Exam_Calender]
@@ -3036,11 +3036,11 @@ app.post("/exam-calendar", async (req, res) => {
       });
     }
 
-    console.log("imageBuffer", imageBuffer);
+    console.log("imageBuffer", Exam_img);
     // =====================================================
     // CREATE NEW CALENDAR
     // =====================================================
-    if (!imageBuffer) {
+    if (!Exam_img) {
       return res.status(400).json({
         success: false,
         message: "Exam_img is required when creating a new exam calendar"
@@ -3052,7 +3052,7 @@ app.post("/exam-calendar", async (req, res) => {
       .input("school_Id", sql.VarChar, school_Id)
       .input("school_code", sql.VarChar, school_code)
       .input("exam_type", sql.VarChar, exam_type)
-      .input("Exam_img", sql.VarBinary(sql.MAX), imageBuffer)
+      .input("Exam_img", sql.NVarChar(sql.MAX), Exam_img)
       .query(`
         INSERT INTO [Enlighten_App].[dbo].[Exam_Calender]
         (
