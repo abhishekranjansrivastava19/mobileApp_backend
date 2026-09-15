@@ -3163,9 +3163,9 @@ app.get("/exam-calendar/:school_code", async (req, res) => {
                     EC.Exam_img,
                     EC.created_date
 
-                FROM [Enlighten_App].[dbo].[Exam_type] ET
+                FROM [Enlighten_App].[dbo].[Exam_Calender] EC
 
-                LEFT JOIN [Enlighten_App].[dbo].[Exam_Calender] EC
+                LEFT JOIN [Enlighten_App].[dbo].[Exam_Type] ET
                     ON EC.exam_type = ET.ExamName
                     AND EC.school_code = ET.School_code
                     AND EC.school_Id = ET.School_id
