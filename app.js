@@ -2960,7 +2960,7 @@ app.post("/exam-calendar", async (req, res) => {
       });
     }
 
-    const pool = await sql.connect();
+    const pool = await getPool();
 
     // Check whether this exam calendar already exists
     const existing = await pool
