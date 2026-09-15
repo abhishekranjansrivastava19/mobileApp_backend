@@ -2801,7 +2801,7 @@ app.post(
 
 
 
-router.post("/exam-calendar", async (req, res) => {
+app.post("/exam-calendar", async (req, res) => {
     try {
         const {
             school_Id,
@@ -2907,7 +2907,7 @@ router.post("/exam-calendar", async (req, res) => {
 });
 
 
-router.delete("/exam-type/:id", async (req, res) => {
+app.delete("/exam-type/:id", async (req, res) => {
     const transaction = new sql.Transaction();
 
     try {
