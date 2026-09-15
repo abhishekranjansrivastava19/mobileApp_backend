@@ -2804,6 +2804,8 @@ app.post("/exam-calendar", async (req, res) => {
 
         const Exam_img = req.body.exam_img;
 
+        console.log(req.body)
+
         if (!school_Id || !school_code || !exam_type) {
             return res.status(400).json({
                 success: false,
