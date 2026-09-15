@@ -3183,9 +3183,7 @@ app.get("/exam-calendar/:school_code", async (req, res) => {
             `);
 
             console.log("Exam calendar fetched successfully for school_code:", school_code, "data:", result.recordset);
-        return res.status(200).json({
-            data: result.recordset[0].data
-        });
+        return res.status(200).json(result.recordset);
 
     } catch (error) {
 
