@@ -2749,7 +2749,8 @@ const getTeacherStudentList = async (req, res) => {
 
         console.log(
             "Students found:",
-            studentResult.recordset.length
+            studentResult.recordset.length,
+            studentResult.recordset
         );
 
         // --------------------------------------------------
