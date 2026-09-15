@@ -2623,7 +2623,6 @@ const getTeacherStudentList = async (req, res) => {
             attendance_date
         } = req.body;
 
-        console.log("Request body:", req.body);
 
         // --------------------------------------------------
         // 1. Validate required fields
@@ -2658,7 +2657,6 @@ const getTeacherStudentList = async (req, res) => {
             ? attendance_date
             : new Date().toISOString().split("T")[0];
 
-        console.log("Selected attendance date:", selectedDate);
 
          const pool = await getPool();
 
@@ -2683,7 +2681,6 @@ const getTeacherStudentList = async (req, res) => {
 
         const teacher = teacherResult.recordset[0];
 
-        console.log("Teacher found:", teacher);
 
         // --------------------------------------------------
         // 4. Fetch students + attendance
@@ -2747,11 +2744,7 @@ const getTeacherStudentList = async (req, res) => {
                     sm.StudentName
             `);
 
-        console.log(
-            "Students found:",
-            studentResult.recordset.length,
-            "Student List : ", studentResult.recordset
-        );
+        
 
         // --------------------------------------------------
         // 5. Response
@@ -2972,6 +2965,66 @@ app.delete("/exam-type/:id", async (req, res) => {
         });
     }
 });
+
+
+
+router.get("/exam-calendar/:school_code", async (req, res) => {
+    try {
+        const { school_code } = req.params;
+
+        if (!school_code) {
+            return res.status(400).json({
+                success: false,
+                message: "school_code is required"
+            });
+        }
+
+        const pool = await getPool();
+
+        const result = await pool.request()
+            .input("school_code", sql.VarChar, school_code)
+            .query(`
+                SELECT
+                    ET.Id AS exam_type_id,
+                    ET.ExamName AS exam_name,
+                    ET.School_code,
+                    ET.School_id,
+
+                    EC.id AS calendar_id,
+                    EC.Exam_img,
+                    EC.created_date
+
+                FROM [Enlighten_App].[dbo].[Exam_type] ET
+
+                LEFT JOIN [Enlighten_App].[dbo].[Exam_Calender] EC
+                    ON EC.exam_type = ET.Id
+                    AND EC.school_code = ET.School_code
+                    AND EC.school_Id = ET.School_id
+
+                WHERE ET.School_code = @school_code
+
+                ORDER BY ET.Id DESC
+            `);
+
+        return res.status(200).json({
+            success: true,
+            count: result.recordset.length,
+            data: result.recordset
+        });
+
+    } catch (error) {
+        console.error("Fetch Exam Calendar Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+});
+
+
+
 
 
 process.on("SIGINT", async () => {
