@@ -3090,14 +3090,14 @@ app.post("/exam-calendar", async (req, res) => {
 
 
 
-app.delete("/exam-type/:id", async (req, res) => {
+app.delete("/exam-type", async (req, res) => {
   console.log("Delete Exam Type Params:", req.params);
 
   try {
     // ============================================
     // GET ID FROM URL
     // ============================================
-    const id = Number(req.params.id);
+    const id = req.body.id;
 
     if (!Number.isInteger(id)) {
       return res.status(400).json({
