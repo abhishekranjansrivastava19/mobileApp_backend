@@ -3091,64 +3091,102 @@ app.post("/exam-calendar", async (req, res) => {
 
 
 app.delete("/exam-type/:id", async (req, res) => {
+  console.log("Delete Exam Type Params:", req.params);
 
-  console.log("Delete Exam Type Request Body:", req.body);
+  try {
+    // ============================================
+    // GET ID FROM URL
+    // ============================================
+    const id = Number(req.params.id);
 
-    try {
-        const { id } = req.body;
-
-        const pool = await getPool();
-
-        console.log(req.body)
-
-        // ============================================
-        // DELETE EXAM CALENDAR
-        // ============================================
-
-        const result = await pool.request()  
-            .input("Id", sql.Int, id)
-            .query(`Select * from Exam_type where Id = @Id`);
-
-        if (result.recordset.length === 0) {
-          res.status(400).json({
-            success: false,
-            message: "Exam Type Not found",
-        });
-      }
-        const examName = result.recordset[0].ExamName;
-
-        await pool.request()
-            .input("exam_type", sql.VarChar, examName)
-            .query(`
-                DELETE FROM [Enlighten_App].[dbo].[Exam_Calender]
-                WHERE exam_type = @exam_type
-            `);
-
-        // ============================================
-        // DELETE EXAM TYPE
-        // ============================================
-
-        await pool.request()
-            .input("Id", sql.Int, id)
-            .query(`
-                DELETE FROM [Enlighten_App].[dbo].[Exam_type]
-                WHERE Id = @Id
-            `);
-
-        return res.status(200).json({
-            success: true,
-            message: "Exam type and associated exam calendar deleted successfully"
-        });
-
-    } catch (error) {
-        console.error("Delete Exam Type Error:", error);
-
-        return res.status(500).json({
-            success: false,
-            message: "Server error",
-            error: error.message
-        });
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid exam type ID is required",
+      });
     }
+
+    const pool = await getPool();
+
+    console.log("Exam Type ID:", id);
+
+    // ============================================
+    // GET EXAM TYPE
+    // ============================================
+    const result = await pool
+      .request()
+      .input("Id", sql.Int, id)
+      .query(`
+        SELECT
+          Id,
+          ExamName,
+          School_code,
+          School_id
+        FROM [Enlighten_App].[dbo].[Exam_type]
+        WHERE Id = @Id
+      `);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Exam Type Not found",
+      });
+    }
+
+    const examType = result.recordset[0];
+
+    const examName = examType.ExamName;
+    const schoolCode = examType.School_code;
+    const schoolId = examType.School_id;
+
+    console.log("Exam Name:", examName);
+    console.log("School Code:", schoolCode);
+    console.log("School ID:", schoolId);
+
+    // ============================================
+    // DELETE ASSOCIATED EXAM CALENDAR
+    // ============================================
+    await pool
+      .request()
+      .input("exam_type", sql.VarChar, examName)
+      .input("school_code", sql.VarChar, schoolCode)
+      .input("school_Id", sql.VarChar, schoolId)
+      .query(`
+        DELETE FROM [Enlighten_App].[dbo].[Exam_Calender]
+        WHERE exam_type = @exam_type
+          AND school_code = @school_code
+          AND school_Id = @school_Id
+      `);
+
+    // ============================================
+    // DELETE EXAM TYPE
+    // ============================================
+    await pool
+      .request()
+      .input("Id", sql.Int, id)
+      .query(`
+        DELETE FROM [Enlighten_App].[dbo].[Exam_type]
+        WHERE Id = @Id
+      `);
+
+    // ============================================
+    // SUCCESS
+    // ============================================
+    return res.status(200).json({
+      success: true,
+      message:
+        "Exam type and associated exam calendar deleted successfully",
+    });
+
+  } catch (error) {
+    console.error("Delete Exam Type Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
 });
 
 
