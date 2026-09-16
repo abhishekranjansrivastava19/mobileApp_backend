@@ -3099,12 +3099,14 @@ app.delete("/exam-type/:id", async (req, res) => {
     // ============================================
     const id = req.params.id;
 
-    if (!Number.isInteger(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid exam type ID is required",
-      });
-    }
+    console.log(id)
+
+    // if (!Number.isInteger(id)) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Valid exam type ID is required",
+    //   });
+    // }
 
     const pool = await getPool();
 
