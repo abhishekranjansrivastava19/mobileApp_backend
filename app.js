@@ -3253,6 +3253,48 @@ app.get("/exam-calendar/:school_code", async (req, res) => {
 
 
 
+app.get("/all-streams/:school_code/:school_id", async (req, res) => {
+    try {
+        const { school_code, school_id } = req.params;
+
+
+        if (!school_code) {
+            return res.status(400).json({
+                success: false,
+                message: "school_code is required"
+            });
+        }
+
+
+        const pool = await getPool();
+
+        const result = await pool.request()
+            .input("school_code", sql.VarChar, school_code)
+            .input("school_id", sql.VarChar, school_id)
+            .query(`
+                SELECT *
+                FROM [Enlighten_App].[dbo].[StreamMaster] 
+                WHERE School_Code = @school_code
+                AND School_ID = @school_id
+                ORDER BY Serial_No DESC
+            `);
+
+        return res.status(200).json(result.recordset);
+
+    } catch (error) {
+
+        console.error("Fetch Stream Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+});
+
+
+
 
 
 process.on("SIGINT", async () => {
