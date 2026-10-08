@@ -3099,7 +3099,6 @@ app.delete("/exam-type/:id", async (req, res) => {
     // ============================================
     const id = req.params.id;
 
-    console.log(id)
 
     // if (!Number.isInteger(id)) {
     //   return res.status(400).json({
@@ -3110,7 +3109,6 @@ app.delete("/exam-type/:id", async (req, res) => {
 
     const pool = await getPool();
 
-    console.log("Exam Type ID:", id);
 
     // ============================================
     // GET EXAM TYPE
@@ -3141,9 +3139,6 @@ app.delete("/exam-type/:id", async (req, res) => {
     const schoolCode = examType.School_code;
     const schoolId = examType.School_id;
 
-    console.log("Exam Name:", examName);
-    console.log("School Code:", schoolCode);
-    console.log("School ID:", schoolId);
 
     // ============================================
     // DELETE ASSOCIATED EXAM CALENDAR
@@ -3197,7 +3192,6 @@ app.get("/exam-calendar/:school_code", async (req, res) => {
     try {
         const { school_code } = req.params;
 
-        console.log(req.params)
 
         if (!school_code) {
             return res.status(400).json({
@@ -3207,7 +3201,6 @@ app.get("/exam-calendar/:school_code", async (req, res) => {
         }
 
 
-        console.log("Fetching exam calendar for school_code:", school_code);
 
         const pool = await getPool();
 
@@ -3236,7 +3229,6 @@ app.get("/exam-calendar/:school_code", async (req, res) => {
                 ORDER BY ET.Id DESC
             `);
 
-            console.log("Exam calendar fetched successfully for school_code:", school_code, "data:", result.recordset);
         return res.status(200).json(result.recordset);
 
     } catch (error) {
